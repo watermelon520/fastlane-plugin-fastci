@@ -1,0 +1,61 @@
+ENV["FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT"] = "120"
+default_platform(:ios)
+
+# 打包
+platform :ios do
+
+  # 打包
+  lane :ipaPackage do
+    package(
+      configuration: options[:configuration],
+      export_method: options[:export_method],
+      is_analyze_swiftlint: options[:is_analyze_swiftlint],
+      is_detect_code_duplicity: options[:is_detect_code_duplicity],
+      is_detect_unused_code: options[:is_detect_unused_code],
+      is_detect_unused_image: options[:is_detect_unused_image]
+    )
+  end
+
+  # 代码分析
+  lane :analyzeSwiftlint do |options|
+    analyze_swiftlint(
+      is_all: options[:is_all],
+      is_from_package: true,
+      configuration: options[:configuration],
+      commit_hash: options[:commit_hash]
+    )
+  end
+
+  # 重复代码检查
+  lane :detectDuplicityCode do |options|
+    detect_duplicity_code(
+      is_all: options[:is_all],
+      commit_hash: options[:commit_hash]
+    )
+  end
+
+  # 无用代码检查
+  lane :detectUnusedCode do |options|
+    detect_unused_code(
+      configuration: "Debug"
+    )
+  end
+
+  # 无用图片检查
+  lane :detectUnusedImage do
+    detect_unused_image()
+  end
+  
+  # 上传 apple store
+  private_lane :upload_applestore do
+    app_store_connect_api_key(
+      key_id: ENV['CONNECT_KEY_ID'],
+      issuer_id: ENV['CONNECT_ISSUER_ID'],
+      key_filepath: File.expand_path("./AuthKey_#{ENV['CONNECT_KEY_ID']}.p8"),
+      duration: 1200, #  max 1200
+      in_house: false
+    )
+    deliver
+  end
+
+end
