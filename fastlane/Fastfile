@@ -9,6 +9,7 @@ platform :ios do
     package(
       configuration: options[:configuration],
       export_method: options[:export_method],
+      build: options[:build],
       is_analyze_swiftlint: options[:is_analyze_swiftlint],
       is_detect_code_duplicity: options[:is_detect_code_duplicity],
       is_detect_unused_code: options[:is_detect_unused_code],
@@ -20,7 +21,6 @@ platform :ios do
   lane :analyzeSwiftlint do |options|
     analyze_swiftlint(
       is_all: options[:is_all],
-      is_from_package: true,
       configuration: options[:configuration],
       commit_hash: options[:commit_hash]
     )
@@ -47,15 +47,11 @@ platform :ios do
   end
   
   # 上传 apple store
-  private_lane :upload_applestore do
-    app_store_connect_api_key(
-      key_id: ENV['CONNECT_KEY_ID'],
-      issuer_id: ENV['CONNECT_ISSUER_ID'],
-      key_filepath: File.expand_path("./AuthKey_#{ENV['CONNECT_KEY_ID']}.p8"),
-      duration: 1200, #  max 1200
-      in_house: false
+  lane :uploadApplestore do |options|
+    # 配合 jenkins 传参使用 { "zh-Hans" => "修复问题", "en-US" => "bugfix"} 格式
+    upload_store(
+      release_notes: options[:release_notes]
     )
-    deliver
   end
 
 end

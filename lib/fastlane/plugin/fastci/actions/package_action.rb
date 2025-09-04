@@ -12,6 +12,7 @@ module Fastlane
         # 入参配置
         configuration = params[:configuration] || "Debug"
         export_method = params[:export_method] || "development"
+        build = params[:build] || nil
         is_analyze_swiftlint = params[:is_analyze_swiftlint] || false
         is_detect_duplicity_code = params[:is_detect_duplicity_code] || false
         is_detect_unused_code = params[:is_detect_unused_code] || false
@@ -31,7 +32,9 @@ module Fastlane
 
         scheme = Environment.scheme
         # 更改项目build号
-        UpdateBuildNumberAction.run({})
+        UpdateBuildNumberAction.run(
+          build: build
+        )
         time = Time.new.strftime("%Y%m%d%H%M")
         version = Actions::GetVersionNumberAction.run(target: "#{Environment.target}")
         build = Actions::GetBuildNumberAction.run({})
@@ -206,6 +209,13 @@ module Fastlane
             description: "打包方式 ad-hoc, enterprise, app-store, development",
             optional: true,
             default_value: "development",
+            type: String
+          ),
+          FastlaneCore::ConfigItem.new(
+            key: :build,
+            description: "不采取自动更新，自定义 build 号",
+            optional: true,
+            default_value: nil,
             type: String
           ),
           FastlaneCore::ConfigItem.new(
