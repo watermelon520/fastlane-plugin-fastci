@@ -6,9 +6,10 @@ Gem::Specification.new do |spec|
   spec.name          = 'fastlane-plugin-fastci'
   spec.version       = Fastlane::Fastci::VERSION
   spec.author        = 'watermelon'
+  spec.email         = 'watermelon_lp@163.com'
 
-  spec.summary       = 'Fast CI'
-  # spec.homepage      = "https://github.com/<GITHUB_USERNAME>/fastlane-plugin-fastci"
+  spec.summary       = 'supports multiple functions such as packaging, uploading, and code detection.'
+  spec.homepage      = "https://github.com/watermelon520/fastlane-plugin-fastci"
   spec.license       = "MIT"
 
   spec.files         = Dir["lib/**/*"] + %w(README.md LICENSE)
