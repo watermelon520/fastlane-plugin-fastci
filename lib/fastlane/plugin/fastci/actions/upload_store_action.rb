@@ -34,7 +34,7 @@ module Fastlane
         [
           FastlaneCore::ConfigItem.new(
             key: :release_notes,
-            description: "更新文案, 格式为 { "zh-Hans" => "修复问题", "en-US" => "bugfix"} ",
+            description: "更新文案, 格式为 { \"zh-Hans\" => \"修复问题\", \"en-US\" => \"bugfix\"} ",
             optional: false,
             type: Hash
           )
