@@ -1,0 +1,20 @@
+verbose: false
+quiet: false
+strict: false
+
+# 排除一些自动生成的文件
+index_exclude:
+  - "**/*?.build/**/*"
+  - "**/Pods/**"
+  - "**/Tests/**"
+  - "**/UITests/**"
+
+# 排除特定目标
+exclude_targets: []
+
+# 保留公开声明
+retain_public: true
+# 保留 @objc 可访问的代码
+retain_objc_accessible: true
+# 是否排除测试目标
+exclude_tests: true

@@ -1,0 +1,52 @@
+excluded:
+  - Pods
+  - Carthage
+  - Lib
+disabled_rules:
+  - trailing_whitespace # 每一个空行不能有空格，会与Xcode换行后自动对齐生成的空格冲突
+  - missing_docs # 缺失说明注释, 官方解释：”Public declarations should be documented.”， 公共声明应该被注释/标记。 在函数声明的时候， 一般情况下， 带public关键字的函数的注释只能用 “///”和 “/* /”来注释， 如果不带public关键字的函数只能用 “//”和 “/* */”
+  - function_parameter_count # 函数参数计数违例:函数应该有5个参数，多余会报错 函数参数个数， 函数参数数量(init方法除外)应该少点， 不要太多，swiftlint规定函数参数数量超过5个给warning， 超过8个直接报error。这个属性推荐使用
+  - identifier_name   # 命名规则必须按照驼峰原则（可能model中的某些字段与json字段命名冲突）
+  - type_name # 类型命名规则限制,以大写字母开头，且长度在1到20个字符之间
+  - shorthand_operator # 使用+= ， -=， *=， /=  代替 a = a + 1
+  - large_tuple # 元祖成员 元组冲突:元组应该最多有2个成员，多余两个会报错
+  - for_where # 使用 `for where` 代替 简单的 `for { if }`
+  - class_delegate_protocol # delegate protocol 应该被设定为 class-only,才能被弱引用
+  - todo #避免 TODOs and FIXMEs 标识
+  - notification_center_detachment # 通知移除
+  - trailing_comma
+opt_in_rules:
+  - weak_delegate
+  - first_where # 使用 .first(where:) 而不是 .filter { }.first
+  - fatal_error_message # fatalError 中添加消息
+  - force_unwrapping # 避免强制解包
+  - empty_count # 使用 isEmpty 代替 count 判断是否为空
+  - empty_string # 禁止使用 "" 来判断字符串是否为空，建议使用 isEmpty
+  - file_name_no_space # 文件名中不允许包含空格
+analyzer_rules:
+  - capture_variable # 检查闭包中捕获的变量是否应该被标记为 weak 或 unowned，以避免强引用循环（retain cycle），从而避免内存泄漏
+  - explicit_self # 强制在闭包或某些上下文中，使用 self 来显式访问实例属性或方法
+  - unused_declaration # 检测代码中未使用的变量、常量、函数或类
+  - unused_import # 检测文件中的未使用 import 语句
+cyclomatic_complexity: # 代码复杂度
+  ignores_case_statements: true
+  warning: 25
+  error: 35
+force_try: warning # try语句判断
+force_cast: warning # 强制转换（代码中存在一些前面通过if判断过类型，后面做的强制转换的代码）
+line_length:    #每行长度限制
+  warning: 400
+  error: 1500
+  ignores_function_declarations: true
+  ignores_comments: true
+file_length:    #文件长度
+  warning: 1000
+  error: 3500
+function_body_length:   #函数体长度
+  warning: 300
+  error: 500
+type_body_length:   #类的长度
+  warning: 800
+  error: 1200
+nesting:	#类型嵌套
+  type_level: 3
