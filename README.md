@@ -21,6 +21,8 @@
 
 4、添加插件 ` fastlane add_plugin fastci `
 
+5、更新插件 ` fastlane update_plugins `
+
 ---
 
 ## 使用方法
