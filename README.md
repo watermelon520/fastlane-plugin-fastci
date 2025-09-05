@@ -1,7 +1,7 @@
 
 # fastlane-plugin-fastci
 
-[![fastlane Plugin Badge](https://rawcdn.githack.com/fastlane/fastlane/master/fastlane/assets/plugin-badge.svg)](https://rubygems.org/gems/fastlane-plugin-ld)
+[![fastlane Plugin Badge](https://rawcdn.githack.com/fastlane/fastlane/master/fastlane/assets/plugin-badge.svg)](https://rubygems.org/gems/fastlane-plugin-fastci)
 
 一个集成 iOS CI 与多种自动化操作的 Fastlane 集合插件。
 简单快速的集成，5 分钟即可上手。
