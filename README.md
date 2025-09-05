@@ -7,21 +7,23 @@
 简单快速的集成，5 分钟即可上手。
 配合 Jenkins 实现高度自定义。
 
+目前还在 Beta 测试阶段！！！
+
 ---
 
 ## 安装方法
 
-```shell
-fastlane add_plugin fastci
-```
+1、安装 [python3](https://www.python.org/downloads/macos/)
+2、安装 [homebrew](https://brew.sh/)
+3、安装并初始化 [fastlane](https://docs.fastlane.tools/getting-started/ios/setup/)
+4、安装插件 ` fastlane add_plugin fastci `
 
 ---
 
 ## 使用方法
 
-需要 python3 环境；初始化 fastlane 环境；
-然后参考项目 fastlane 文件夹内编写 Fastfile 和 .env.default 文件替换项目内文件
-最后项目根目录就可以开始使用了 ` fastlane `
+参考 [` Fastfile `](fastlane/Fastfile) 和 [` .env.default `](fastlane/.env.default) 文件替换项目内 fastlane 文件
+项目根目录就可以直接使用 ` fastlane `
 
 ---
 
