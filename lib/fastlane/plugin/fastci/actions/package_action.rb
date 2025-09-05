@@ -182,7 +182,7 @@ module Fastlane
           UI.message("*************| 跳过未使用图片检查 |*************")
         end
 
-        if is_swiftlint ||
+        if is_analyze_swiftlint ||
           is_detect_duplicity_code ||
           is_detect_unused_code ||
           is_detect_unused_image
