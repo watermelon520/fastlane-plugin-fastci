@@ -34,11 +34,11 @@
 
 ### 1. 自动打包
 功能：自动编译并导出 ipa 包，支持多种打包方式和集成多项检查。
-生成完的 ipa 会放在桌面上，非 app-store 配置了蒲公英参数会自动上传蒲公英，app-store 配置了商店参数会自动上传蒲公英。
+生成完的 ipa 会放在桌面上，非 ` app-store ` 配置了蒲公英参数会自动上传蒲公英，` app-store ` 配置了商店参数会自动上传蒲公英。
 
-build：不指定的话内部有递增逻辑，格式为 20250905.15（日期+当天包的次数）
+` build `: 不指定的话内部有递增逻辑，格式为 20250905.15（日期+当天包的次数）
 
-version：在 Xcode13 之后创建的项目，不再支持脚本修改。需要兼容请在 ` Build settings ` 中将 ` GENERATE_INFOPLIST_FILE ` 设置为 ` NO `
+` version `: 在 Xcode13 之后创建的项目，不再支持脚本修改。需要兼容请在 ` Build settings ` 中将 ` GENERATE_INFOPLIST_FILE ` 设置为 ` NO `
 
 ```ruby
 package(
@@ -57,7 +57,7 @@ package(
 功能：依赖 ` SwiftLint ` 对项目代码进行静态分析，生成分析报告。
 使用前需要参考自定义 [` .swiftlint.yml `](/.swiftlint.yml) 文件，并将该文件放到项目根目录。
 
-commit_hash: 上一次提交哈希, 会比较该哈希到最新哈希之间的文件
+` commit_hash `: 上一次提交哈希, 会比较该哈希到最新哈希之间的文件
 
 ```ruby
 analyze_swiftlint(
@@ -68,10 +68,10 @@ analyze_swiftlint(
 ```
 
 ### 3. 检测重复代码
-功能：检测项目中的重复 Swift 代码，生成分析报告。
+功能：检测项目中的重复代码，生成分析报告。
 使用前需要参考自定义 [` .periphery.yml `](/.periphery.yml) 文件，并将该文件放到项目根目录。
 
-commit_hash: 上一次提交哈希, 会比较该哈希到最新哈希之间的文件
+` commit_hash `: 上一次提交哈希, 会比较该哈希到最新哈希之间的文件
 
 ```ruby
 detect_duplicity_code(
@@ -82,7 +82,7 @@ detect_duplicity_code(
 
 ### 4. 检测未使用代码
 功能：检测项目中未被使用的代码，生成分析报告。
-默认只支持 Debug，需要支持 Release 请在 ` Build settings ` 中将 ` Enable Index-While-Building Functionality ` 设置为 ` Yes `。
+默认只支持 ` Debug `，需要支持 ` Release ` 请在 ` Build settings ` 中将 ` Enable Index-While-Building Functionality ` 设置为 ` Yes `。
 
 ```ruby
 detect_unused_code(
