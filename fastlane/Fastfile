@@ -5,13 +5,13 @@ default_platform(:ios)
 platform :ios do
 
   # 打包
-  lane :ipaPackage do
+  lane :ipaPackage do |options|
     package(
       configuration: options[:configuration],
       export_method: options[:export_method],
       build: options[:build],
       is_analyze_swiftlint: options[:is_analyze_swiftlint],
-      is_detect_code_duplicity: options[:is_detect_code_duplicity],
+      is_detect_duplicity_code: options[:is_detect_duplicity_code],
       is_detect_unused_code: options[:is_detect_unused_code],
       is_detect_unused_image: options[:is_detect_unused_image]
     )
@@ -37,7 +37,7 @@ platform :ios do
   # 无用代码检查
   lane :detectUnusedCode do |options|
     detect_unused_code(
-      configuration: "Debug"
+      configuration: options[:configuration]
     )
   end
 

@@ -13,6 +13,7 @@ module Fastlane
         configuration = params[:configuration] || "Debug"
         export_method = params[:export_method] || "development"
         build = params[:build] || nil
+        version = params[:version] || nil
         is_analyze_swiftlint = params[:is_analyze_swiftlint] || false
         is_detect_duplicity_code = params[:is_detect_duplicity_code] || false
         is_detect_unused_code = params[:is_detect_unused_code] || false
@@ -31,12 +32,18 @@ module Fastlane
         InstallProfileAction.run({})
 
         scheme = Environment.scheme
+
+        # 更改项目version
+        other_action.increment_version_number(
+          version_number: version
+        ) if CommonHelper.is_validate_string(version)
+
         # 更改项目build号
         UpdateBuildNumberAction.run(
           build: build
         )
         time = Time.new.strftime("%Y%m%d%H%M")
-        version = Actions::GetVersionNumberAction.run(target: "#{Environment.target}")
+        version = Actions::GetVersionNumberAction.run(target: Environment.target)
         build = Actions::GetBuildNumberAction.run({})
         # 生成ipa包的名字格式
         ipaName = "#{Environment.scheme}_#{export_method}_#{version}_#{build}.ipa"
@@ -71,7 +78,7 @@ module Fastlane
 
         UI.message("*************| 开始打包 |*************")
 
-        options = {
+        other_action.gym(
           clean: true,
           silent: true,
           workspace: Environment.workspace,
@@ -84,9 +91,7 @@ module Fastlane
             method: export_method,
             provisioningProfiles: provisioningProfiles_map
           }
-        }
-        config = FastlaneCore::Configuration.create(Gym::Options.available_options, options)
-        Gym::Manager.new.work(config)
+        )
 
         UI.message("*************| 打包完成 |*************")
 
@@ -201,32 +206,51 @@ module Fastlane
             key: :configuration,
             description: "编译环境 Release or Debug",
             optional: true,
-            default_value: "Release",
-            type: String
+            default_value: "Debug",
+            type: String,
+            verify_block: proc do |value|
+              valid_params = ["Release", "Debug"]
+              unless valid_params.include?(value)
+                UI.user_error!("无效的编译环境: #{value}。支持的环境: #{valid_params.join(', ')}")
+              end
+            end
           ),
           FastlaneCore::ConfigItem.new(
             key: :export_method,
             description: "打包方式 ad-hoc, enterprise, app-store, development",
             optional: true,
             default_value: "development",
-            type: String
+            type: String,
+            verify_block: proc do |value|
+              valid_params = ["ad-hoc", "enterprise", "app-store", "development"]
+              unless valid_params.include?(value)
+                UI.user_error!("无效的打包方式: #{value}。支持的方式: #{valid_params.join(', ')}")
+              end
+            end
           ),
           FastlaneCore::ConfigItem.new(
-            key: :build,
-            description: "不采取自动更新，自定义 build 号",
+            key: :version,
+            description: "自定义 `version`。在 Xcode13 之后创建的项目，不再支持脚本修改。需要兼容请在 Build settings 中将 GENERATE_INFOPLIST_FILE 设置为 NO",
             optional: true,
             default_value: nil,
             type: String
           ),
           FastlaneCore::ConfigItem.new(
-            key: :is_analyze_code,
+            key: :build,
+            description: "不采取自动更新，自定义 `build` 号",
+            optional: true,
+            default_value: nil,
+            type: String
+          ),
+          FastlaneCore::ConfigItem.new(
+            key: :is_analyze_swiftlint,
             description: "是否代码分析",
             optional: true,
             default_value: false,
             type: Boolean
           ),
           FastlaneCore::ConfigItem.new(
-            key: :is_detect_code_duplicity,
+            key: :is_detect_duplicity_code,
             description: "是否检查重复代码",
             optional: true,
             default_value: false,

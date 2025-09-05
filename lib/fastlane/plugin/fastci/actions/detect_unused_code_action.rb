@@ -20,7 +20,7 @@ module Fastlane
         if is_from_package == false
           puts "*************| 构建项目以生成索引存储 |*************"
 
-          options = {
+          other_action.gym(
             clean: true,
             silent: true,
             workspace: Environment.workspace,
@@ -29,9 +29,7 @@ module Fastlane
             buildlog_path: Constants.BUILD_LOG_DIR,
             skip_archive: true,
             skip_package_ipa: true
-          }
-          config = FastlaneCore::Configuration.create(Gym::Options.available_options, options)
-          Gym::Manager.new.work(config)
+          )
         end
 
         log_dir = File.expand_path(Constants.BUILD_LOG_DIR)
@@ -72,20 +70,26 @@ module Fastlane
 
       def self.available_options
         [
-            FastlaneCore::ConfigItem.new(
-              key: :is_from_package,
-              description: "是否从打包流程调用",
-              optional: true,
-              default_value: false,
-              type: Boolean
-            ),
-            FastlaneCore::ConfigItem.new(
-              key: :configuration,
-              description: "构建配置",
-              optional: true,
-              default_value: "Release",
-              type: String
-            )
+          FastlaneCore::ConfigItem.new(
+            key: :is_from_package,
+            description: "是否从打包流程调用",
+            optional: true,
+            default_value: false,
+            type: Boolean
+          ),
+          FastlaneCore::ConfigItem.new(
+            key: :configuration,
+            description: "构建配置。默认只支持 Debug，需要支持 Release 请在 Build settings 中将 Enable Index-While-Building Functionality 设置为 Yes",
+            optional: true,
+            default_value: "Debug",
+            type: String,
+            verify_block: proc do |value|
+              valid_params = ["Release", "Debug"]
+              unless valid_params.include?(value)
+                UI.user_error!("无效的编译环境: #{value}。支持的环境: #{valid_params.join(', ')}")
+              end
+            end
+          )
         ]
       end
 

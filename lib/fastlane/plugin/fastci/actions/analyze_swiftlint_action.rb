@@ -21,7 +21,7 @@ module Fastlane
         if is_from_package == false
           UI.message("*************| 构建项目以生成索引存储 |*************")
 
-          options = {
+          other_action.gym(
             clean: true,
             silent: true,
             workspace: Environment.workspace,
@@ -30,9 +30,7 @@ module Fastlane
             buildlog_path: Constants.BUILD_LOG_DIR,
             skip_archive: true,
             skip_package_ipa: true
-          }
-          config = FastlaneCore::Configuration.create(Gym::Options.available_options, options)
-          Gym::Manager.new.work(config)
+          )
         end
 
         log_dir = File.expand_path(Constants.BUILD_LOG_DIR)
@@ -91,7 +89,13 @@ module Fastlane
             description: "构建配置",
             optional: true,
             default_value: "Release",
-            type: String
+            type: String,
+            verify_block: proc do |value|
+              valid_params = ["Release", "Debug"]
+              unless valid_params.include?(value)
+                UI.user_error!("无效的编译环境: #{value}。支持的环境: #{valid_params.join(', ')}")
+              end
+            end
           ),
           FastlaneCore::ConfigItem.new(
             key: :commit_hash,
