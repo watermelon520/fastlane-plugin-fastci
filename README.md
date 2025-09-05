@@ -28,7 +28,19 @@
 参考 [` Fastfile `](fastlane/Fastfile) 和 [` .env.default `](fastlane/.env.default) 替换项目内 fastlane 文件夹下文件。
 然后终端进入项目根目录就可以使用 ` fastlane `
 
----
+
+### 使用后会在项目根目录生成文件夹
+
+可以自行在 ` .gitignore ` 中设置忽略等级 
+
+```
+fastlane_cache/ # 插件缓存文件夹
+├── build_logs/ # 编译日志
+├── html/ # 各种检查报告
+├── temp/ # 临时文件
+├── build_cache.txt # build 自动递增缓存
+└── commit_cache.txt # git commit 缓存
+```
 
 ## 支持功能与使用示例
 
@@ -36,7 +48,7 @@
 功能：自动编译并导出 ipa 包，支持多种打包方式和集成多项检查。
 生成完的 ipa 会放在桌面上，非 ` app-store ` 配置了蒲公英参数会自动上传蒲公英，` app-store ` 配置了商店参数会自动上传蒲公英。
 
-` build `: 不指定的话内部有递增逻辑，格式为 20250905.15（日期+当天包的次数）
+` build `: 不指定的话内部有递增逻辑，格式为 ` 20250905.15（日期+当天包的次数） `
 
 ` version `: 在 Xcode13 之后创建的项目，不再支持脚本修改。需要兼容请在 ` Build settings ` 中将 ` GENERATE_INFOPLIST_FILE ` 设置为 ` NO `
 

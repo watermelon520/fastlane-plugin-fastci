@@ -41,7 +41,7 @@ module Fastlane
         "fastlane_cache/build_logs"
       end
       def self.IPA_OUTPUT_DIR
-        "fastlane_cache/build_products"
+        "fastlane_cache/temp"
       end
     end
   end
