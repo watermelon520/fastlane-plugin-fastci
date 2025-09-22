@@ -7,10 +7,10 @@ module Fastlane
     class InstallProfileAction < Action
       def self.run(params)
         UI.message("*************| 开始安装 provisioningProfile |*************")
-
-        provisioning_profile_paths = Dir.glob("../#{Environment.provisioningProfile_folder_name}/*.mobileprovision")
+        
+        provisioning_profile_paths = Dir.glob(File.expand_path("#{Environment.provisioningProfile_folder_name}/*.mobileprovision"))
         provisioning_profile_paths.each do |path|
-          install_provisioning_profile(
+          other_action.install_provisioning_profile(
             path: File.expand_path(path)
           )
         end
