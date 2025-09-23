@@ -21,7 +21,7 @@ module Fastlane
           force: true,
           submit_for_review: false,
           automatic_release: false,
-          release_notes: params[:release_notes]
+          release_notes: params[:release_notes] || ""
         )
         
       end

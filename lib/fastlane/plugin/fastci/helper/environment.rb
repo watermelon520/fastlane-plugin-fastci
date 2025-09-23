@@ -77,6 +77,14 @@ module Fastlane
         ENV['PGY_PASSWORD']
       end
 
+      # Fir配置
+      def self.fir_api_token
+        ENV['FIR_API_TOKEN']
+      end
+      def self.fir_password
+        ENV['FIR_PASSWORD']
+      end
+
       # 钉钉配置
       def self.dingdingToken
         ENV['DINGDING_TOKEN']

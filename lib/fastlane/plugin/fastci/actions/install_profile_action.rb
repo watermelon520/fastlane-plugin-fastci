@@ -11,7 +11,7 @@ module Fastlane
         provisioning_profile_paths = Dir.glob(File.expand_path("#{Environment.provisioningProfile_folder_name}/*.mobileprovision"))
         provisioning_profile_paths.each do |path|
           other_action.install_provisioning_profile(
-            path: File.expand_path(path)
+            path: path
           )
         end
       end

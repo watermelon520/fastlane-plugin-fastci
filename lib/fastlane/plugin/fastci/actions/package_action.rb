@@ -27,9 +27,9 @@ module Fastlane
         FileUtils.rm_rf(Dir.glob("#{Constants.IPA_OUTPUT_DIR}/*"))
         
         # 安装证书
-        InstallCertificateAction.run({})
+        other_action.install_certificate()
         # 安装 provisioningProfile
-        InstallProfileAction.run({})
+        other_action.install_profile()
 
         scheme = Environment.scheme
 
@@ -115,27 +115,39 @@ module Fastlane
 
         if export_method == "app-store"
           notiText = "🚀🚀🚀🚀🚀🚀\n\n#{scheme}-iOS-打包完成\n\n#{version}_#{build}_#{export_method}\n\n🚀🚀🚀🚀🚀🚀"
-          NotiDingdingAction.run(notiText: notiText)
+          DingdingHelper.sendMarkdown(notiText)
 
           if CommonHelper.is_validate_string(Environment.connect_key_id) && CommonHelper.is_validate_string(Environment.connect_issuer_id)
 
-            UploadStoreAction.run({})
+            other_action.upload_store()
             notiText = "🚀🚀🚀🚀🚀🚀\n\n#{scheme}-iOS-上传完成\n\n#{version}_#{build}_#{export_method}\n\n🚀🚀🚀🚀🚀🚀"
-            NotiDingdingAction.run(notiText: notiText)
+            DingdingHelper.sendMarkdown(notiText)
           end
         else
-          # 上传蒲公英
-          pgy_upload_info = UploadPgyAction.run(
-            "ipa_path": ipa_path
-          )
-          qrCode = pgy_upload_info["buildQRCodeURL"]
-
           # 钉钉通知
           notiText = "🚀🚀🚀🚀🚀🚀\n\n#{scheme}-iOS-打包完成\n\n#{version}_#{build}_#{export_method}\n\n🚀🚀🚀🚀🚀🚀"
-          if CommonHelper.is_validate_string(qrCode)
-            notiText << "\n\n⬇️⬇️⬇️ 扫码安装 ⬇️⬇️⬇️\n\n![screenshot](#{qrCode})"
+
+          # 上传蒲公英
+          if CommonHelper.is_validate_string(Environment.pgy_api_key)
+            pgy_upload_info = other_action.upload_pgy()
+            qrCode = pgy_upload_info["buildQRCodeURL"]
+
+            if CommonHelper.is_validate_string(qrCode)
+              notiText << "\n\n⬇️⬇️⬇️ 扫码安装 ⬇️⬇️⬇️\n\n\n密码: #{Environment.pgy_password}\n![screenshot](#{qrCode})"
+            end
           end
-          NotiDingdingAction.run(notiText: notiText)
+
+          # 上传 fir
+          if CommonHelper.is_validate_string(Environment.fir_api_token)
+            fir_upload_info = other_action.upload_fir()
+            download_url = fir_upload_info["download_url"]
+
+            if CommonHelper.is_validate_string(download_url)
+              notiText << "\n\n⬇️⬇️⬇️ 点击链接安装 ⬇️⬇️⬇️\n\n\n密码: #{Environment.fir_password}\n[_点击下载_](#{download_url})"
+            end
+          end
+
+          DingdingHelper.sendMarkdown(notiText)
         end
 
         # 代码分析
@@ -188,7 +200,7 @@ module Fastlane
           is_detect_unused_image
           # 钉钉通知
           notiText = "🚀🚀🚀🚀🚀🚀\n\n#{scheme}-iOS-代码检查完成\n\n#{version}_#{build}_#{export_method}\n\n🚀🚀🚀🚀🚀🚀"
-          NotiDingdingAction.run(notiText: notiText)
+          DingdingHelper.sendMarkdown(notiText)
         else
           UI.message("*************| 跳过代码检查 |*************")
         end
@@ -270,6 +282,12 @@ module Fastlane
             default_value: false,
             type: Boolean
           ),
+          FastlaneCore::ConfigItem.new(
+            key: :release_notes,
+            description: "更新文案, 格式为 { \"zh-Hans\" => \"修复问题\", \"en-US\" => \"bugfix\"} ",
+            optional: true,
+            type: Hash
+          )
         ]
       end
 

@@ -11,7 +11,7 @@ module Fastlane
         certificate_paths = Dir.glob(File.expand_path("#{Environment.certificate_folder_name}/*.p12"))
         certificate_paths.each do |path|
           other_action.import_certificate(
-            certificate_path: File.expand_path(path),
+            certificate_path: path,
             certificate_password: "#{Environment.certificate_password}",
             keychain_name: "login.keychain",
             keychain_password: "#{Environment.keychain_password}"
