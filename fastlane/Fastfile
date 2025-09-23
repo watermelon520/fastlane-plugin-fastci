@@ -13,7 +13,8 @@ platform :ios do
       is_analyze_swiftlint: options[:is_analyze_swiftlint],
       is_detect_duplicity_code: options[:is_detect_duplicity_code],
       is_detect_unused_code: options[:is_detect_unused_code],
-      is_detect_unused_image: options[:is_detect_unused_image]
+      is_detect_unused_image: options[:is_detect_unused_image],
+      release_notes: options[:release_notes] # 配合 jenkins 传参上传 appstore { "zh-Hans" => "修复问题", "en-US" => "bugfix"} 格式
     )
   end
 
@@ -44,14 +45,6 @@ platform :ios do
   # 无用图片检查
   lane :detectUnusedImage do
     detect_unused_image()
-  end
-  
-  # 上传 apple store
-  lane :uploadApplestore do |options|
-    # 配合 jenkins 传参使用 { "zh-Hans" => "修复问题", "en-US" => "bugfix"} 格式
-    upload_store(
-      release_notes: options[:release_notes]
-    )
   end
 
 end

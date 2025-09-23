@@ -17,6 +17,7 @@ Gem::Specification.new do |spec|
   spec.metadata['rubygems_mfa_required'] = 'true'
   spec.required_ruby_version = '>= 2.6'
 
-  spec.add_dependency 'fastlane-plugin-pgyer', '~> 0.2.6'
+  spec.add_dependency 'fastlane-plugin-pgyer', '~> 0.3.2'
   spec.add_dependency 'fastlane-plugin-versioning', '~> 0.7.1'
+  spec.add_dependency 'fastlane-plugin-fir_cli', '~> 2.0.21'
 end

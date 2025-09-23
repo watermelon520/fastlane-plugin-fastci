@@ -48,7 +48,7 @@ fastlane_cache/ # 插件缓存文件夹
 
 ### 1. 自动打包
 功能：自动编译并导出 ipa 包，支持多种打包方式和集成多项检查。
-生成完的 ipa 会放在桌面上，非 ` app-store ` 配置了蒲公英参数会自动上传蒲公英，` app-store ` 配置了商店参数会自动上传商店。
+生成完的 ipa 会放在桌面上，非 ` app-store ` 配置了蒲公英或 fir 参数会自动上传蒲公英或 fir` app-store ` 配置了商店参数会自动上传商店。
 
 ` build `: 不指定的话内部有递增逻辑，格式为 ` 20250905.15（日期+当天包的次数） `
 
@@ -64,6 +64,7 @@ package(
 	is_detect_duplicity_code: false, # 是否检测重复代码
 	is_detect_unused_code: false, # 是否检测未使用代码
 	is_detect_unused_image: false # 是否检测未使用图片
+    release_notes: options[:release_notes] # 配合 jenkins 传参上传 appstore { "zh-Hans" => "修复问题", "en-US" => "bugfix"} 格式   
 )
 ```
 
