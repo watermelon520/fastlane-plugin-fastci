@@ -130,7 +130,7 @@ module Fastlane
           # 上传蒲公英
           if CommonHelper.is_validate_string(Environment.pgy_api_key)
             pgy_upload_info = other_action.upload_pgy()
-            qrCode = pgy_upload_info[:buildQRCodeURL]
+            qrCode = pgy_upload_info["buildQRCodeURL"]
 
             if CommonHelper.is_validate_string(qrCode)
               notiText << "\n\n⬇️⬇️⬇️ 扫码安装 ⬇️⬇️⬇️\n\n\n密码: #{Environment.pgy_password}\n![screenshot](#{qrCode})"
