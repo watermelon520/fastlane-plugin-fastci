@@ -13,16 +13,7 @@ module Fastlane
           api_token: Environment.fir_api_token,
           password: Environment.fir_password,
         )
-        UI.message("*************| firinfo = #{firinfo} |*************")
-
-        short = firinfo[:short]
-        download_domain = firinfo[:download_domain]
-        release_id = firinfo[:release_id]
-
-        download_url = FirHelper.build_download_url(download_domain, short)
-        firinfo[:download_url] = download_url
-        firinfo[:qrcode_path] = FirHelper.build_qrcode(download_url)
-
+        
         return firinfo
       end
 

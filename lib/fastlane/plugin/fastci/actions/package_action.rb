@@ -130,7 +130,7 @@ module Fastlane
           # 上传蒲公英
           if CommonHelper.is_validate_string(Environment.pgy_api_key)
             pgy_upload_info = other_action.upload_pgy()
-            qrCode = pgy_upload_info["buildQRCodeURL"]
+            qrCode = pgy_upload_info[:buildQRCodeURL]
 
             if CommonHelper.is_validate_string(qrCode)
               notiText << "\n\n⬇️⬇️⬇️ 扫码安装 ⬇️⬇️⬇️\n\n\n密码: #{Environment.pgy_password}\n![screenshot](#{qrCode})"
@@ -140,7 +140,7 @@ module Fastlane
           # 上传 fir
           if CommonHelper.is_validate_string(Environment.fir_api_token)
             fir_upload_info = other_action.upload_fir()
-            download_url = fir_upload_info["download_url"]
+            download_url = fir_upload_info[:download_url]
 
             if CommonHelper.is_validate_string(download_url)
               notiText << "\n\n⬇️⬇️⬇️ 点击链接安装 ⬇️⬇️⬇️\n\n\n密码: #{Environment.fir_password}\n[_点击下载_](#{download_url})"
