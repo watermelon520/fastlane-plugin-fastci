@@ -18,6 +18,7 @@ module Fastlane
         is_detect_duplicity_code = params[:is_detect_duplicity_code] || false
         is_detect_unused_code = params[:is_detect_unused_code] || false
         is_detect_unused_image = params[:is_detect_unused_image] || false
+        release_notes = params[:release_notes] || ""
         if export_method == "app-store"
           configuration = "Release"
         end
@@ -119,7 +120,7 @@ module Fastlane
 
           if CommonHelper.is_validate_string(Environment.connect_key_id) && CommonHelper.is_validate_string(Environment.connect_issuer_id)
 
-            other_action.upload_store()
+            other_action.upload_store(release_notes: release_notes)
             notiText = "🚀🚀🚀🚀🚀🚀\n\n#{scheme}-iOS-上传完成\n\n#{version}_#{build}_#{export_method}\n\n🚀🚀🚀🚀🚀🚀"
             DingdingHelper.sendMarkdown(notiText)
           end
@@ -284,9 +285,9 @@ module Fastlane
           ),
           FastlaneCore::ConfigItem.new(
             key: :release_notes,
-            description: "更新文案, 格式为 { \"zh-Hans\" => \"修复问题\", \"en-US\" => \"bugfix\"} ",
+            description: "更新文案, 格式为 { \"zh-Hans\": \"修复问题\", \"en-US\": \"bugfix\"} JSON 字符串",
             optional: true,
-            type: Hash
+            type: String
           )
         ]
       end

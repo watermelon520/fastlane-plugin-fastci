@@ -64,7 +64,7 @@ package(
 	is_detect_duplicity_code: false, # 是否检测重复代码
 	is_detect_unused_code: false, # 是否检测未使用代码
 	is_detect_unused_image: false # 是否检测未使用图片
-    release_notes: options[:release_notes] # 配合 jenkins 传参上传 appstore { "zh-Hans" => "修复问题", "en-US" => "bugfix"} 格式   
+    release_notes: options[:release_notes] # 配合 jenkins 传参上传 appstore 格式为 { \"zh-Hans\": \"修复问题\", \"en-US\": \"bugfix\"} JSON 字符串 
 )
 ```
 

@@ -8,6 +8,8 @@ module Fastlane
       def self.run(params)
         UI.message("*************| 开始上传 AppStore |*************")
 
+        release_notes = JSON.parse(params[:release_notes] || "") rescue ""
+
         other_action.app_store_connect_api_key(
           key_id: Environment.connect_key_id,
           issuer_id: Environment.connect_issuer_id,
@@ -21,7 +23,7 @@ module Fastlane
           force: true,
           submit_for_review: false,
           automatic_release: false,
-          release_notes: params[:release_notes] || ""
+          release_notes: release_notes
         )
         
       end
@@ -34,9 +36,9 @@ module Fastlane
         [
           FastlaneCore::ConfigItem.new(
             key: :release_notes,
-            description: "更新文案, 格式为 { \"zh-Hans\" => \"修复问题\", \"en-US\" => \"bugfix\"} ",
+            description: "更新文案, 格式为 { \"zh-Hans\": \"修复问题\", \"en-US\": \"bugfix\"} JSON 字符串",
             optional: false,
-            type: Hash
+            type: String
           )
         ]
       end
