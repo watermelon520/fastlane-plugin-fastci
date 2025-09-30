@@ -13,7 +13,7 @@ module Fastlane
         other_action.app_store_connect_api_key(
           key_id: Environment.connect_key_id,
           issuer_id: Environment.connect_issuer_id,
-          key_filepath: File.expand_path("./AuthKey_#{Environment.connect_key_id}.p8"),
+          key_filepath: File.expand_path("#{Environment.package_file_folder_name}/AuthKey_#{Environment.connect_key_id}.p8"),
           duration: 1200, # optional (maximum 1200)
           in_house: false # optional but may be required if using match/sigh
         )

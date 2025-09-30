@@ -8,7 +8,7 @@ module Fastlane
       def self.run(params)
         UI.message("*************| 开始安装 p12 证书 |*************")
 
-        certificate_paths = Dir.glob(File.expand_path("#{Environment.certificate_folder_name}/*.p12"))
+        certificate_paths = Dir.glob(File.expand_path("#{Environment.package_file_folder_name}/*.p12"))
         certificate_paths.each do |path|
           other_action.import_certificate(
             certificate_path: path,

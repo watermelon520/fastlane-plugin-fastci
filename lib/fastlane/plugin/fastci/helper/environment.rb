@@ -29,10 +29,12 @@ module Fastlane
         ENV['SCHEMES_NAME']&.split(",") || []
       end
 
-      # 描述文件配置
-      def self.provisioningProfile_folder_name
-        ENV['PROFILE_FOLDER_NAME']
+      # 证书描述文件等放置的文件夹名称
+      def self.package_file_folder_name
+        ENV['PACKAGE_FILE_FOLDER_NAME']
       end
+
+      # 描述文件配置
       def self.provisioningProfiles_development
         ENV['PROFILE_DEVELOPMENT']
       end
@@ -53,9 +55,6 @@ module Fastlane
       end
 
       # p12 证书配置
-      def self.certificate_folder_name
-        ENV['PROFILE_FOLDER_NAME']
-      end
       def self.certificate_development
         ENV['CERTIFICATE_DEVELOPMENT']
       end
