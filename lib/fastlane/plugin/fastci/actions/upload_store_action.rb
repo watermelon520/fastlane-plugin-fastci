@@ -20,6 +20,8 @@ module Fastlane
         other_action.upload_to_app_store(
           skip_metadata: false,
           skip_screenshots: true,
+          run_precheck_before_submit: false,
+          precheck_include_in_app_purchases: false,
           force: true,
           submit_for_review: false,
           automatic_release: false,
