@@ -27,7 +27,8 @@
 
 ## 使用方法
 
-参考 [` Fastfile `](fastlane/Fastfile) 和 [` .env.default `](fastlane/.env.default) 替换项目内 fastlane 文件夹下文件。
+参考 [` Fastfile `](fastlane/Fastfile) 和 [` .env.default `](fastlane/.env.default) 替换项目内 fastlane 文件夹下文件；
+项目根目录新建 ` PACKAGE_FILE_FOLDER_NAME ` 配置对应名字文件夹，将描述文件、证书、p8 密钥等文件放入该文件夹下。
 然后终端进入项目根目录就可以使用 ` fastlane `
 
 
