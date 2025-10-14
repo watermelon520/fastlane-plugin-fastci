@@ -17,7 +17,7 @@ module Fastlane
         ENV['TARGET_NAME']
       end
       def self.workspace
-        ENV['WORKSPACE']
+        ENV['WORKSPACE_NAME']
       end
       def self.bundleID
         ENV['BUNDLE_ID']
