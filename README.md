@@ -47,7 +47,7 @@ fastlane_cache/ # 插件缓存文件夹
 
 ### 1. 自动打包
 功能：自动编译并导出 ipa 包，支持多种打包方式和集成多项检查。
-生成完的 ipa 会放在桌面上，非 ` app-store ` 配置了蒲公英或 fir 参数会自动上传蒲公英或 fir` app-store ` 配置了商店参数会自动上传商店。
+生成完的 ipa 会放在桌面上，非 ` app-store ` 配置了蒲公英或 fir 参数会自动上传蒲公英或 fir` app-store ` 和 ` testFlight ` 配置了商店参数会自动上传商店。
 
 ` build `: 不指定的话内部有递增逻辑，格式为 ` 20250905.15（日期+当天包的次数） `
 
@@ -56,7 +56,7 @@ fastlane_cache/ # 插件缓存文件夹
 ```ruby
 package(
 	configuration: "Debug", # 编译环境 Release/Debug
-	export_method: "development", # 打包方式 ad-hoc, enterprise, app-store, development
+	export_method: "development", # 打包方式 ad-hoc, enterprise, app-store, development, testFlight
 	version: nil, # 指定 version
 	build: nil, # 指定 build 号
 	is_analyze_swiftlint: false, # 是否代码分析

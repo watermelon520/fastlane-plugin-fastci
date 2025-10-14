@@ -19,7 +19,7 @@ module Fastlane
         is_detect_unused_code = params[:is_detect_unused_code] || false
         is_detect_unused_image = params[:is_detect_unused_image] || false
         release_notes = params[:release_notes] || ""
-        if export_method == "app-store"
+        if export_method == "app-store" || export_method == "testFlight"
           configuration = "Release"
         end
 
@@ -32,7 +32,7 @@ module Fastlane
         # 安装 provisioningProfile
         other_action.install_profile()
 
-        scheme = Environment.scheme
+        scheme = params[:scheme] || Environment.scheme
 
         # 更改项目version
         other_action.increment_version_number(
@@ -47,7 +47,7 @@ module Fastlane
         version = Actions::GetVersionNumberAction.run(target: Environment.target)
         build = Actions::GetBuildNumberAction.run({})
         # 生成ipa包的名字格式
-        ipaName = "#{Environment.scheme}_#{export_method}_#{version}_#{build}.ipa"
+        ipaName = "#{scheme}_#{export_method}_#{version}_#{build}.ipa"
         
         # 获取 Extension 的 Bundle ID（可能有多个，用逗号分隔）
         extension_bundle_ids = Environment.extension_bundle_ids
@@ -62,7 +62,7 @@ module Fastlane
         when "ad-hoc"
           profile_name = Environment.provisioningProfiles_adhoc
           extension_profile_names = Environment.extension_profiles_adhoc
-        when "app-store"
+        when "app-store", "testFlight"
           profile_name = Environment.provisioningProfiles_appstore
           extension_profile_names = Environment.extension_profiles_appstore
         else
@@ -79,7 +79,9 @@ module Fastlane
 
         UI.message("*************| 开始打包 |*************")
 
-        # 根据是否自动更新描述文件来设置不同的打包参数
+        # 对于 testFlight，使用 app-store 方法
+        gym_method = export_method == "testFlight" ? "app-store" : export_method
+        
         gym_options = {
           clean: true,
           silent: true,
@@ -90,7 +92,7 @@ module Fastlane
           output_name: ipaName,
           output_directory: Constants.IPA_OUTPUT_DIR,
           export_options: {
-            method: export_method
+            method: gym_method
           }
         }
 
@@ -122,13 +124,18 @@ module Fastlane
 
         ipa_path = "#{Constants.IPA_OUTPUT_DIR}/#{ipaName}"
 
-        if export_method == "app-store"
+        if export_method == "app-store" || export_method == "testFlight"
           notiText = "🚀🚀🚀🚀🚀🚀\n\n#{scheme}-iOS-打包完成\n\n#{version}_#{build}_#{export_method}\n\n🚀🚀🚀🚀🚀🚀"
           DingdingHelper.sendMarkdown(notiText)
 
           if CommonHelper.is_validate_string(Environment.connect_key_id) && CommonHelper.is_validate_string(Environment.connect_issuer_id)
-
-            other_action.upload_store(release_notes: release_notes)
+            # 根据 export_method 决定是否为 TestFlight
+            is_test_flight = export_method == "testFlight"
+            
+            other_action.upload_store(
+              release_notes: release_notes,
+              isTestFlight: is_test_flight
+            )
             notiText = "🚀🚀🚀🚀🚀🚀\n\n#{scheme}-iOS-上传完成\n\n#{version}_#{build}_#{export_method}\n\n🚀🚀🚀🚀🚀🚀"
             DingdingHelper.sendMarkdown(notiText)
           end
@@ -162,7 +169,7 @@ module Fastlane
         end
 
         # 代码分析
-        if is_analyze_swiftlint && export_method != "app-store"
+        if is_analyze_swiftlint && gym_method != "app-store"
           analyze_swiftlint(is_from_package: true, configuration: configuration)
           # 结果复制到桌面
           FileUtils.cp(SWIFTLINT_HTML_FILE, target_path)
@@ -173,7 +180,7 @@ module Fastlane
         end
 
         # 重复代码检查
-        if is_detect_duplicity_code && export_method != "app-store"
+        if is_detect_duplicity_code && gym_method != "app-store"
           detect_code_duplicity(is_all: true)
           # 结果复制到桌面
           FileUtils.cp(DUPLICITY_CODE_HTML_FILE, target_path)
@@ -183,7 +190,7 @@ module Fastlane
         end
 
         # 无用代码检查
-        if is_detect_unused_code && export_method != "app-store"
+        if is_detect_unused_code && gym_method != "app-store"
           DetectUnusedCodeAction.run(
             is_from_package: true,
             configuration: configuration
@@ -196,7 +203,7 @@ module Fastlane
         end
 
         # 无用图片检查
-        if is_detect_unused_image && export_method != "app-store"
+        if is_detect_unused_image && gym_method != "app-store"
           DetectUnusedImageAction.run({})
           # 结果复制到桌面
           FileUtils.cp(Constants.UNUSED_IMAGE_HTML_FILE, target_path)
@@ -226,6 +233,13 @@ module Fastlane
       def self.available_options
         [
           FastlaneCore::ConfigItem.new(
+            key: :scheme,
+            description: "不采取默认配置，自定义 `scheme` 名称",
+            optional: true,
+            default_value: nil,
+            type: String
+          ),
+          FastlaneCore::ConfigItem.new(
             key: :configuration,
             description: "编译环境 Release or Debug",
             optional: true,
@@ -240,12 +254,12 @@ module Fastlane
           ),
           FastlaneCore::ConfigItem.new(
             key: :export_method,
-            description: "打包方式 ad-hoc, enterprise, app-store, development",
+            description: "打包方式 ad-hoc, enterprise, app-store, development, testFlight",
             optional: true,
             default_value: "development",
             type: String,
             verify_block: proc do |value|
-              valid_params = ["ad-hoc", "enterprise", "app-store", "development"]
+              valid_params = ["ad-hoc", "enterprise", "app-store", "development", "testFlight"]
               unless valid_params.include?(value)
                 UI.user_error!("无效的打包方式: #{value}。支持的方式: #{valid_params.join(', ')}")
               end
