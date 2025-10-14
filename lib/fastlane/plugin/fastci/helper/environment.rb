@@ -33,6 +33,10 @@ module Fastlane
       def self.package_file_folder_name
         ENV['PACKAGE_FILE_FOLDER_NAME']
       end
+      # 是否自动更新描述文件
+      def self.is_auto_update_provisioning
+        ENV['IS_AUTO_UPDATE_PROVISIONING'] == "true"
+      end
 
       # 描述文件配置
       def self.provisioningProfiles_development

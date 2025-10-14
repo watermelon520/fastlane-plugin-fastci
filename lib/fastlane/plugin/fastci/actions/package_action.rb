@@ -79,7 +79,8 @@ module Fastlane
 
         UI.message("*************| 开始打包 |*************")
 
-        other_action.gym(
+        # 根据是否自动更新描述文件来设置不同的打包参数
+        gym_options = {
           clean: true,
           silent: true,
           workspace: Environment.workspace,
@@ -89,10 +90,17 @@ module Fastlane
           output_name: ipaName,
           output_directory: Constants.IPA_OUTPUT_DIR,
           export_options: {
-            method: export_method,
-            provisioningProfiles: provisioningProfiles_map
+            method: export_method
           }
-        )
+        }
+
+        if Environment.is_auto_update_provisioning
+          gym_options[:xcargs] = '-allowProvisioningUpdates'
+        else
+          gym_options[:export_options][:provisioningProfiles] = provisioningProfiles_map
+        end
+
+        other_action.gym(gym_options)
 
         UI.message("*************| 打包完成 |*************")
 
@@ -140,7 +148,9 @@ module Fastlane
 
           # 上传 fir
           if CommonHelper.is_validate_string(Environment.fir_api_token)
-            fir_upload_info = other_action.upload_fir()
+            fir_upload_info = other_action.upload_fir(
+              changelog: params[:changelog]
+            )
             download_url = fir_upload_info[:download_url]
 
             if CommonHelper.is_validate_string(download_url)
@@ -282,6 +292,12 @@ module Fastlane
             optional: true,
             default_value: false,
             type: Boolean
+          ),
+          FastlaneCore::ConfigItem.new(
+            key: :changelog,
+            description: "更新日志",
+            optional: true,
+            type: String
           ),
           FastlaneCore::ConfigItem.new(
             key: :release_notes,

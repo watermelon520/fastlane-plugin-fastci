@@ -14,6 +14,7 @@ platform :ios do
       is_detect_duplicity_code: options[:is_detect_duplicity_code],
       is_detect_unused_code: options[:is_detect_unused_code],
       is_detect_unused_image: options[:is_detect_unused_image],
+      changelog: options[:changelog], # fir 更新日志
       release_notes: options[:release_notes] # 配合 jenkins 传参上传 appstore 格式为 { \"zh-Hans\": \"修复问题\", \"en-US\": \"bugfix\"} JSON 字符串
     )
   end

@@ -12,6 +12,7 @@ module Fastlane
         firinfo = other_action.fir_cli(
           api_token: Environment.fir_api_token,
           password: Environment.fir_password,
+          changelog: params[:changelog],
         )
         
         return firinfo
@@ -22,7 +23,14 @@ module Fastlane
       end
 
       def self.available_options
-        []
+        [
+          FastlaneCore::ConfigItem.new(
+            key: :changelog,
+            description: "更新日志",
+            optional: true,
+            type: String
+          ),
+        ]
       end
 
       def self.is_supported?(platform)
