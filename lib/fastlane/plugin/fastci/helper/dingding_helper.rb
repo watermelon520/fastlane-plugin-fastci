@@ -6,6 +6,13 @@ module Fastlane
     class DingdingHelper
 
       def self.sendMarkdown(text)
+
+        # 检查钉钉 Token 是否存在
+        unless CommonHelper.is_validate_string(Environment.dingdingToken)
+          UI.message("*************| 跳过钉钉消息通知（未配置 Token）|*************")
+          return
+        end
+        
         UI.message("*************| 开始钉钉消息通知 |*************")
 
         curl = %Q{

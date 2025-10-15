@@ -36,9 +36,13 @@ module Fastlane
         log_file = sh("ls -t #{log_dir}/*.log | head -n 1").strip
         index_store_path = CommonHelper.extract_index_store_path(log_file)
 
-        schemes = Environment.schemes
+        schemes = Environment.extra_schemes
+        scheme = params[:scheme] || Environment.scheme
+
         if schemes.empty?
-          schemes = Environment.scheme
+          schemes = [scheme]
+        else
+          schemes = schemes + [scheme]
         end
 
         # 运行 Periphery 扫描
@@ -70,6 +74,13 @@ module Fastlane
 
       def self.available_options
         [
+          FastlaneCore::ConfigItem.new(
+            key: :scheme,
+            description: "不采取默认配置，自定义 `scheme` 名称",
+            optional: true,
+            default_value: nil,
+            type: String
+          ),
           FastlaneCore::ConfigItem.new(
             key: :is_from_package,
             description: "是否从打包流程调用",

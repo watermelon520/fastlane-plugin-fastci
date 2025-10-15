@@ -13,9 +13,6 @@ module Fastlane
       def self.scheme
         ENV['SCHEME_NAME']
       end
-      def self.target
-        ENV['TARGET_NAME']
-      end
       def self.workspace
         ENV['WORKSPACE_NAME']
       end
@@ -25,8 +22,8 @@ module Fastlane
       def self.extension_bundle_ids
         ENV['EXTENSION_BUNDLE_IDS']&.split(",") || []
       end
-      def self.schemes
-        ENV['SCHEMES_NAME']&.split(",") || []
+      def self.extra_schemes
+        ENV['EXTRA_SCHEMES_NAME']&.split(",") || []
       end
 
       # 证书描述文件等放置的文件夹名称

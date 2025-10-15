@@ -44,7 +44,7 @@ module Fastlane
           build: build
         )
         time = Time.new.strftime("%Y%m%d%H%M")
-        version = Actions::GetVersionNumberAction.run(target: Environment.target)
+        version = Actions::GetVersionNumberAction.run(target: scheme)
         build = Actions::GetBuildNumberAction.run({})
         # 生成ipa包的名字格式
         ipaName = "#{scheme}_#{export_method}_#{version}_#{build}.ipa"
@@ -124,7 +124,7 @@ module Fastlane
 
         ipa_path = "#{Constants.IPA_OUTPUT_DIR}/#{ipaName}"
 
-        if export_method == "app-store" || export_method == "testFlight"
+        if gym_method == "app-store"
           notiText = "🚀🚀🚀🚀🚀🚀\n\n#{scheme}-iOS-打包完成\n\n#{version}_#{build}_#{export_method}\n\n🚀🚀🚀🚀🚀🚀"
           DingdingHelper.sendMarkdown(notiText)
 
@@ -192,6 +192,7 @@ module Fastlane
         # 无用代码检查
         if is_detect_unused_code && gym_method != "app-store"
           DetectUnusedCodeAction.run(
+            scheme: scheme,
             is_from_package: true,
             configuration: configuration
           )
