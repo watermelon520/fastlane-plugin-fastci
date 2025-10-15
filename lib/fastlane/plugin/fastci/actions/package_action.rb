@@ -170,7 +170,10 @@ module Fastlane
 
         # 代码分析
         if is_analyze_swiftlint && gym_method != "app-store"
-          analyze_swiftlint(is_from_package: true, configuration: configuration)
+          other_action.analyze_swiftlint(
+            is_from_package: true,
+            configuration: configuration
+          )
           # 结果复制到桌面
           FileUtils.cp(SWIFTLINT_HTML_FILE, target_path)
           FileUtils.cp(SWIFTLINT_ANALYZE_HTML_FILE, target_path)
@@ -181,7 +184,9 @@ module Fastlane
 
         # 重复代码检查
         if is_detect_duplicity_code && gym_method != "app-store"
-          detect_code_duplicity(is_all: true)
+          other_action.detect_code_duplicity(
+            is_all: true
+          )
           # 结果复制到桌面
           FileUtils.cp(DUPLICITY_CODE_HTML_FILE, target_path)
           UI.message("*************| 重复代码检查完成 |*************")
@@ -191,7 +196,7 @@ module Fastlane
 
         # 无用代码检查
         if is_detect_unused_code && gym_method != "app-store"
-          DetectUnusedCodeAction.run(
+          other_action.detect_unused_code(
             scheme: scheme,
             is_from_package: true,
             configuration: configuration
@@ -205,7 +210,7 @@ module Fastlane
 
         # 无用图片检查
         if is_detect_unused_image && gym_method != "app-store"
-          DetectUnusedImageAction.run({})
+          other_action.detect_unused_image()
           # 结果复制到桌面
           FileUtils.cp(Constants.UNUSED_IMAGE_HTML_FILE, target_path)
           UI.message("*************| 无用图片检查完成 |*************")
