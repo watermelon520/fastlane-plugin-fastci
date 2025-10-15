@@ -175,7 +175,6 @@ module Fastlane
             configuration: configuration
           )
           # 结果复制到桌面
-          FileUtils.cp(SWIFTLINT_HTML_FILE, target_path)
           FileUtils.cp(SWIFTLINT_ANALYZE_HTML_FILE, target_path)
           UI.message("*************| 代码分析完成 |*************")
         else

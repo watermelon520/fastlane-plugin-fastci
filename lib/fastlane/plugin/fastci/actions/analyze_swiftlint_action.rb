@@ -36,10 +36,12 @@ module Fastlane
         log_dir = File.expand_path(Constants.BUILD_LOG_DIR)
         log_file = sh("ls -t #{log_dir}/*.log | head -n 1").strip
 
+        yml_file = File.expand_path(".swiftlint.yml")
+
         analyze_file = File.expand_path(Constants.SWIFTLINT_ANALYZE_FILE)
 
         if is_all
-          sh "swiftlint analyze --compiler-log-path #{log_file} > #{analyze_file} || true"
+          sh "swiftlint analyze --config #{yml_file} --compiler-log-path #{log_file} --force-exclude > #{analyze_file} || true"
         else
           commit_hash = params[:commit_hash] || read_cached_txt(Constants.COMMIT_HASH_FILE)
           swift_files = CommonHelper.get_git_modified_swift_files(commit_hash)
@@ -50,7 +52,7 @@ module Fastlane
           end
 
           files_to_analyze = swift_files.join(" ")
-          sh "swiftlint analyze --compiler-log-path #{log_file} #{files_to_analyze} > #{analyze_file} || true"
+          sh "swiftlint analyze --config #{yml_file} --compiler-log-path #{log_file} #{files_to_analyze} --force-exclude > #{analyze_file} || true"
         end
 
         # 输出代码分析报告
