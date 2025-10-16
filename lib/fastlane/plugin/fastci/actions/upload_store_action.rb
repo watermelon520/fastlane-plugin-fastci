@@ -7,7 +7,7 @@ module Fastlane
     class UploadStoreAction < Action
       def self.run(params)
 
-        release_notes = JSON.parse(params[:release_notes] || "") rescue ""
+        release_notes = JSON.parse(params[:release_notes] || "") rescue nil
 
         other_action.app_store_connect_api_key(
           key_id: Environment.connect_key_id,
@@ -24,16 +24,24 @@ module Fastlane
           )
         else
           UI.message("*************| 开始上传 AppStore |*************")
-          other_action.upload_to_app_store(
+          
+          # 构建上传参数，只有当 release_notes 有效时才添加
+          upload_options = {
             skip_metadata: false,
             skip_screenshots: true,
             run_precheck_before_submit: false,
             precheck_include_in_app_purchases: false,
             force: true,
             submit_for_review: false,
-            automatic_release: false,
-            release_notes: release_notes
-          )
+            automatic_release: false
+          }
+          
+          # 只有当 release_notes 不为 nil 且不为空时才添加
+          if release_notes && !release_notes.empty?
+            upload_options[:release_notes] = release_notes
+          end
+          
+          other_action.upload_to_app_store(upload_options)
         end
       end
 
