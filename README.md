@@ -26,8 +26,11 @@
 ## 使用方法
 
 参考 [` Fastfile `](fastlane/Fastfile) 和 [` .env.default `](fastlane/.env.default) 替换项目内 fastlane 文件夹下文件；
-项目根目录新建 ` PACKAGE_FILE_FOLDER_NAME ` 配置对应名字文件夹，将描述文件、p12 证书、p8 密钥等文件放入该文件夹下。
+项目根目录新建 ` PACKAGE_FILE_FOLDER_NAME ` 配置对应名字文件夹，将描述文件、p12 证书、p8 密钥等文件放入该文件夹下；
 然后终端进入项目根目录即可使用 ` fastlane `
+
+如果是同一个 workspace 多项目的情况，可以采用多配置文件的方式。同样也是参考 [` .env.default `](fastlane/.env.default) 根据多个项目创建多个配置文件 ` .env.project1 ` 、 ` .env.project2 `；
+执行的时候指定环境文件 ` fastlane package --env project1 ` 来运行
 
 
 ### 使用后会在项目根目录生成文件夹
@@ -47,7 +50,7 @@ fastlane_cache/ # 插件缓存文件夹
 
 ### 1. 自动打包
 功能：自动编译并导出 ipa 包，支持多种打包方式和集成多项检查。
-生成完的 ipa 会放在桌面上，非 ` app-store ` 配置了蒲公英或 fir 参数会自动上传蒲公英或 fir` app-store ` 和 ` testFlight ` 配置了商店参数会自动上传商店。
+生成完的 ipa 会放在桌面上，非 ` app-store ` 配置了蒲公英或 fir 参数会自动上传蒲公英或 fir。` app-store ` 和 ` testFlight ` 配置了商店参数会自动上传商店。
 
 ` build `: 不指定的话内部有递增逻辑，格式为 ` 20250905.15（日期+当天包的次数） `
 
