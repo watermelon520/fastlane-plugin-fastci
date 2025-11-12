@@ -10,6 +10,7 @@ platform :ios do
       configuration: options[:configuration],
       export_method: options[:export_method],
       build: options[:build],
+      scheme: options[:scheme],
       is_analyze_swiftlint: options[:is_analyze_swiftlint],
       is_detect_duplicity_code: options[:is_detect_duplicity_code],
       is_detect_unused_code: options[:is_detect_unused_code],
