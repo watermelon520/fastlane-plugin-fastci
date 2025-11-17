@@ -31,7 +31,8 @@ module Fastlane
         UI.message("*************| 更新 build #{build} |*************")
         # 更改项目 build 号
         Actions::IncrementBuildNumberAction.run(
-          build_number: build
+          build_number: build,
+          xcodeproj: Environment.project
         )
         
       end
