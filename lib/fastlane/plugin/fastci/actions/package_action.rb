@@ -183,7 +183,7 @@ module Fastlane
 
         # 重复代码检查
         if is_detect_duplicity_code && gym_method != "app-store"
-          other_action.detect_code_duplicity(
+          other_action.detect_duplicity_code(
             is_all: true
           )
           # 结果复制到桌面

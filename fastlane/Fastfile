@@ -46,7 +46,9 @@ platform :ios do
 
   # 无用图片检查
   lane :detectUnusedImage do
-    detect_unused_image()
+    detect_unused_image(
+      exclude: nil # 要排除的路径，多个路径用逗号分隔。默认会排除 Carthage 和 Pods 目录
+    )
   end
 
 end

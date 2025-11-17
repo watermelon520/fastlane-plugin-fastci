@@ -114,7 +114,9 @@ detect_unused_code(
 功能：检测项目中未被使用的图片资源，生成分析报告。
 
 ```ruby
-detect_unused_image()
+detect_unused_image(
+    exclude: nil # 要排除的路径，多个路径用逗号分隔。默认会排除 Carthage 和 Pods 目录
+)
 ```
 
 ---
