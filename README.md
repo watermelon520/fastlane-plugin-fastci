@@ -29,8 +29,8 @@
 项目根目录新建 ` PACKAGE_FILE_FOLDER_NAME ` 配置对应名字文件夹，将描述文件、p12 证书、p8 密钥等文件放入该文件夹下；
 然后终端进入项目根目录即可使用 ` fastlane `
 
-如果是同一个 xcworkspace 多 xcodeproj 的情况，可以采用多配置文件的方式。同样也是参考 [` .env.default `](fastlane/.env.default) 根据多个 xcodeproj 创建多个配置文件 ` .env.project1 ` 、 ` .env.project2 `；
-执行的时候指定环境文件 ` fastlane package --env project1 ` 来运行
+如果是同一个 xcworkspace 多 xcodeproj 的情况，可以采用多配置文件的方式。同样也是参考 [` .env.default `](fastlane/.env.default) 根据多个 xcodeproj 创建多个配置文件 ` .env.project1 ` 、 ` .env.project2 `，注意文件的隐藏扩展，名字不能是 ` .env.project1.default `；
+执行的时候指定环境文件 ` fastlane --env project1 package ` 来运行
 
 
 ### 使用后会在项目根目录生成文件夹
