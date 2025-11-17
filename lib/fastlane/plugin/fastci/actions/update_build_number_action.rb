@@ -29,11 +29,13 @@ module Fastlane
         end
 
         UI.message("*************| 更新 build #{build} |*************")
+        
         # 更改项目 build 号
-        Actions::IncrementBuildNumberAction.run(
-          build_number: build,
-          xcodeproj: Environment.project
-        )
+        build_options = { build_number: build }
+        if CommonHelper.is_validate_string(Environment.project)
+          build_options[:xcodeproj] = Environment.project
+        end
+        other_action.increment_build_number(build_options)
         
       end
 

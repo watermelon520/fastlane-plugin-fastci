@@ -35,17 +35,33 @@ module Fastlane
         scheme = params[:scheme] || Environment.scheme
 
         # 更改项目version
-        other_action.increment_version_number(
-          version_number: version
-        ) if CommonHelper.is_validate_string(version)
+        if CommonHelper.is_validate_string(version)
+          increment_options = { version_number: version }
+          if CommonHelper.is_validate_string(Environment.project)
+            increment_options[:xcodeproj] = Environment.project
+          end
+          other_action.increment_version_number(increment_options)
+        end
 
         # 更改项目build号
-        UpdateBuildNumberAction.run(
+        other_action.update_build_number(
           build: build
         )
         time = Time.new.strftime("%Y%m%d%H%M")
-        version = Actions::GetVersionNumberAction.run(target: scheme)
-        build = Actions::GetBuildNumberAction.run({})
+        
+        # 获取版本号
+        version_options = { target: scheme }
+        if CommonHelper.is_validate_string(Environment.project)
+          version_options[:xcodeproj] = Environment.project
+        end
+        version = other_action.get_version_number(version_options)
+        
+        # 获取 build 号
+        build_options = {}
+        if CommonHelper.is_validate_string(Environment.project)
+          build_options[:xcodeproj] = Environment.project
+        end
+        build = other_action.get_build_number(build_options)
         # 生成ipa包的名字格式
         ipaName = "#{scheme}_#{export_method}_#{version}_#{build}.ipa"
         
