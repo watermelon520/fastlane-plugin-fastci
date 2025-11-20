@@ -87,6 +87,9 @@ module Fastlane
       def self.fir_password
         ENV['FIR_PASSWORD']
       end
+      def self.fir_switch_qiniu
+        ENV['FIR_SWITCH_QINIU'] == "true"
+      end
 
       # 钉钉配置
       def self.dingdingToken

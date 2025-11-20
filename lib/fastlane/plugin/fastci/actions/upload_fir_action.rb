@@ -13,7 +13,7 @@ module Fastlane
           api_token: Environment.fir_api_token,
           password: Environment.fir_password,
           changelog: params[:changelog],
-          switch_to_qiniu: true
+          switch_to_qiniu: Environment.fir_switch_qiniu
         )
         
         return firinfo
