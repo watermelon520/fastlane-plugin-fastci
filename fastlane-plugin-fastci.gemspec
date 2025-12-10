@@ -20,4 +20,5 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'fastlane-plugin-pgyer', '~> 0.3.2'
   spec.add_dependency 'fastlane-plugin-versioning', '~> 0.7.1'
   spec.add_dependency 'fastlane-plugin-fir_cli', '~> 2.0.21'
+  spec.add_dependency 'fastlane-plugin-sentry', '~> 1.36.0'
 end

@@ -184,6 +184,13 @@ module Fastlane
           DingdingHelper.sendMarkdown(notiText)
         end
 
+        # Sentry 上传 dSYM
+        if CommonHelper.is_validate_string(Environment.sentry_auth_token) 
+          other_action.sentry_upload_dsym()
+        else
+          UI.message("*************| 未配置 Sentry 跳过 dSYM 上传 |*************")
+        end
+
         # 代码分析
         if is_analyze_swiftlint && gym_method != "app-store"
           other_action.analyze_swiftlint(

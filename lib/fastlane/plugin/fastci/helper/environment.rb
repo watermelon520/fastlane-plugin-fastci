@@ -95,6 +95,21 @@ module Fastlane
       def self.dingdingToken
         ENV['DINGDING_TOKEN']
       end
+
+      # Sentry 配置
+      def self.sentry_auth_token
+        ENV['SENTRY_AUTH_TOKEN']
+      end
+      def self.sentry_org_slug
+        ENV['SENTRY_ORG_SLUG']
+      end
+      def self.sentry_project_slug
+        ENV['SENTRY_PROJECT_SLUG']
+      end
+      def self.sentry_url
+        ENV['SENTRY_URL']
+      end
+
     end
   end
 end

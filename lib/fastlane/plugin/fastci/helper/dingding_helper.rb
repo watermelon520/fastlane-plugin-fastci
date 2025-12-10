@@ -27,6 +27,7 @@ module Fastlane
           }'
         }
         system curl
+        UI.message("")
       end
 
     end
