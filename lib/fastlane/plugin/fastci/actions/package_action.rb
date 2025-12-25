@@ -27,10 +27,11 @@ module Fastlane
         FileUtils.rm_rf(Dir.glob("#{Constants.BUILD_LOG_DIR}/*"))
         FileUtils.rm_rf(Dir.glob("#{Constants.IPA_OUTPUT_DIR}/*"))
         
-        # 安装证书
-        other_action.install_certificate()
-        # 安装 provisioningProfile
-        other_action.install_profile()
+        # 非自动更新模式下，安装证书和 provisioningProfile
+        unless Environment.is_auto_update_provisioning
+          other_action.install_certificate()
+          other_action.install_profile()
+        end
 
         scheme = params[:scheme] || Environment.scheme
 
@@ -85,6 +86,8 @@ module Fastlane
           raise "Unsupported export method: #{export_method}"
         end
 
+        UI.message("*************| 开始打包 |*************")
+
         # 组装 provisioningProfiles 
         provisioningProfiles_map = {
           "#{Environment.bundleID}" => "#{profile_name}"
@@ -92,8 +95,6 @@ module Fastlane
         extension_bundle_ids.each_with_index do |ext_bundle_id, idx|
           provisioningProfiles_map[ext_bundle_id.strip] = extension_profile_names[idx]&.strip
         end
-
-        UI.message("*************| 开始打包 |*************")
 
         # 对于 testFlight，使用 app-store 方法
         gym_method = export_method == "testFlight" ? "app-store" : export_method
