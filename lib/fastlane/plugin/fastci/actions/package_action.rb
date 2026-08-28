@@ -182,6 +182,7 @@ module Fastlane
               testflight_changelog: testflight_params[:changelog],
               testflight_distribute_external: testflight_params[:distribute_external],
               testflight_notify_external_testers: testflight_params[:notify_external_testers],
+              testflight_submit_beta_review: testflight_params[:submit_beta_review],
               testflight_groups: testflight_params[:groups]
             )
 
@@ -450,6 +451,13 @@ module Fastlane
             description: '分发 TestFlight 构建时是否通知外部测试人员，默认关闭',
             optional: true,
             default_value: false,
+            type: Boolean
+          ),
+          FastlaneCore::ConfigItem.new(
+            key: :testflight_submit_beta_review,
+            description: '是否自动提交 TestFlight Beta 审核；关闭后需在 App Store Connect 手动提交，默认开启',
+            optional: true,
+            default_value: true,
             type: Boolean
           ),
           FastlaneCore::ConfigItem.new(

@@ -28,7 +28,8 @@ module Fastlane
             # 测试内容只能在 Build 处理完成后写入；无测试内容且不分发外测时才可提前结束。
             skip_waiting_for_build_processing: params[:testflight_changelog].to_s.empty? && !params[:testflight_distribute_external],
             distribute_external: params[:testflight_distribute_external],
-            notify_external_testers: params[:testflight_notify_external_testers]
+            notify_external_testers: params[:testflight_notify_external_testers],
+            submit_beta_review: params[:testflight_submit_beta_review]
           }
           upload_options[:changelog] = params[:testflight_changelog] if params[:testflight_changelog].to_s.length > 0
           upload_options[:groups] = params[:testflight_groups] if params[:testflight_groups]
@@ -100,6 +101,13 @@ module Fastlane
             description: '分发到外部测试组时是否通知测试人员，默认关闭',
             optional: true,
             default_value: false,
+            type: Boolean
+          ),
+          FastlaneCore::ConfigItem.new(
+            key: :testflight_submit_beta_review,
+            description: '是否自动提交 TestFlight Beta 审核；关闭后需在 App Store Connect 手动提交，默认开启',
+            optional: true,
+            default_value: true,
             type: Boolean
           ),
           FastlaneCore::ConfigItem.new(

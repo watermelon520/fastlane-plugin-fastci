@@ -176,14 +176,16 @@ describe Fastlane::Helper::AppStoreResourcesHelper do
       params = described_class.load_testflight_params(
         testflight_build_number: '2026081302',
         testflight_changelog: '请测试登录流程。',
-        testflight_distribute_external: false
+        testflight_distribute_external: false,
+        testflight_submit_beta_review: false
       )
 
       expect(params).to include(
         testflight_build_number: '2026081302',
         changelog: '请测试登录流程。',
         distribute_external: false,
-        notify_external_testers: false
+        notify_external_testers: false,
+        submit_beta_review: false
       )
     end
   end

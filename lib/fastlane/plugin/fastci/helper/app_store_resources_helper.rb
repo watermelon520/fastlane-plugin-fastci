@@ -77,6 +77,7 @@ module Fastlane
         build_processing_retry_interval
         distribute_external
         notify_external_testers
+        submit_beta_review
         groups
       ].freeze
 
@@ -88,7 +89,8 @@ module Fastlane
         build_processing_retry_limit: 3,
         build_processing_retry_interval: 15,
         distribute_external: false,
-        notify_external_testers: false
+        notify_external_testers: false,
+        submit_beta_review: true
       }.freeze
 
       def self.load_params(params)
@@ -155,6 +157,7 @@ module Fastlane
         explicit_values[:changelog] = params[:testflight_changelog] if params[:testflight_changelog]
         explicit_values[:distribute_external] = params[:testflight_distribute_external] unless params[:testflight_distribute_external].nil?
         explicit_values[:notify_external_testers] = params[:testflight_notify_external_testers] unless params[:testflight_notify_external_testers].nil?
+        explicit_values[:submit_beta_review] = params[:testflight_submit_beta_review] unless params[:testflight_submit_beta_review].nil?
         explicit_values[:groups] = params[:testflight_groups] if params[:testflight_groups]
 
         TESTFLIGHT_DEFAULT_PARAMS.merge(config).merge(explicit_values).tap do |values|
