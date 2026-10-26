@@ -21,4 +21,5 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'fastlane-plugin-versioning', '~> 0.7.1'
   spec.add_dependency 'fastlane-plugin-fir_cli', '~> 2.0.21'
   spec.add_dependency 'fastlane-plugin-sentry', '~> 2.5.1'
+  spec.add_dependency 'fastlane-plugin-zealot', '~> 1.0.1'
 end

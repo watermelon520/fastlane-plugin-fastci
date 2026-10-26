@@ -182,6 +182,18 @@ module Fastlane
             end
           end
 
+          # 上传 Zealot
+          if CommonHelper.is_validate_string(Environment.zealot_token)
+            zealot_upload_info = other_action.upload_zealot(
+              file: ipa_path,
+              changelog: params[:changelog]
+            )
+            # dSYM 仅在 IPA 上传成功且显式开启时上传。
+            if zealot_upload_info && params[:is_upload_zealot_dsym]
+              other_action.upload_zealot_dsym
+            end
+          end
+
           send_dingding_notice.call(notiText)
         end
 
@@ -261,6 +273,14 @@ module Fastlane
 
       def self.available_options
         [
+          FastlaneCore::ConfigItem.new(
+            key: :is_upload_zealot_dsym,
+            env_name: 'ZEALOT_UPLOAD_DSYM',
+            description: 'IPA 上传 Zealot 成功后继续上传 iOS dSYM',
+            optional: true,
+            default_value: false,
+            type: Boolean
+          ),
           FastlaneCore::ConfigItem.new(
             key: :scheme,
             description: '不采取默认配置，自定义 `scheme` 名称',

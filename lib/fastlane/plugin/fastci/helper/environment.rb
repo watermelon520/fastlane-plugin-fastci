@@ -91,6 +91,17 @@ module Fastlane
         ENV['FIR_SWITCH_QINIU'] == "true"
       end
 
+      # Zealot 配置；可选上传渠道，未配置时不影响现有打包流程。
+      def self.zealot_endpoint
+        ENV['ZEALOT_ENDPOINT']
+      end
+      def self.zealot_token
+        ENV['ZEALOT_TOKEN']
+      end
+      def self.zealot_channel_key
+        ENV['ZEALOT_CHANNEL_KEY']
+      end
+
       # 钉钉配置
       def self.dingdingToken
         ENV['DINGDING_TOKEN']
