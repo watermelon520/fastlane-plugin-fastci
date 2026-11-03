@@ -71,7 +71,7 @@ package(
 	is_detect_duplicity_code: false, # 是否检测重复代码
 	is_detect_unused_code: false, # 是否检测未使用代码
 	is_detect_unused_image: false, # 是否检测未使用图片
-	changelog: options[:changelog], # fir / Zealot 更新日志
+	changelog: options[:changelog], # fir / Zealot 更新日志，也是各平台钉钉通知的更新说明
 	app_store_resources_enabled: options[:app_store_resources_enabled], # 总开关；未传时读取 APP_STORE_RESOURCES_ENABLED，默认 false
 	app_store_resources_config_path: options[:app_store_resources_config_path], # 未传时读取 APP_STORE_RESOURCES_CONFIG_PATH
 	release_notes: options[:release_notes], # JSON 字符串，例如 '{"zh-Hans":"修复问题","en-US":"Bug fixes"}'；仅资源功能开启且上传 metadata 时生效
@@ -401,6 +401,155 @@ sync_zealot_devices(api_key_path: "./app_store_connect_api_key.json")
 
 依赖兼容：Zealot 的 `debug_file` 依赖 `ruby-macho < 3`，不能与 CocoaPods 1.17（依赖 4.x）放在同一 bundle。此类工程应将 CocoaPods 放入独立 Gemfile；使用 Faraday 1 的 Fastlane 工程还应将 `faraday-net_http` 限制为 `~> 1.0`。
 
+### 8. 钉钉通知
+
+`package` 使用统一的 Markdown 模板发送分发结果、失败及检查结果。配置 `DINGDING_TOKEN` 后默认开启，传入 `is_notice_dingding: false` 可关闭本次流程的全部通知。机器人配置参考[钉钉自定义机器人文档](https://open.dingtalk.com/document/robots/custom-robot-access)，关键词可设为 `iOS`。
+
+```dotenv
+DINGDING_TOKEN=
+DINGDING_INCLUDE_INSTALL_PASSWORD=true
+DINGDING_TESTFLIGHT_URL=
+DINGDING_APP_STORE_URL=
+```
+
+| 配置 | 默认值 | 用途 |
+| --- | --- | --- |
+| `DINGDING_TOKEN` | 未设置 | 群机器人的 `access_token`；未配置时不发送 |
+| `is_notice_dingding` | `true` | `package` 参数；`false` 优先于 Token 配置 |
+| `DINGDING_INCLUDE_INSTALL_PASSWORD` | `true` | 是否展示蒲公英 / fir 的安装密码；`false` 时隐藏 |
+| `DINGDING_TESTFLIGHT_URL` | 未设置 | TestFlight 公开测试邀请链接，配置后展示 |
+| `DINGDING_APP_STORE_URL` | 未设置 | App Store 线上应用页面，配置后展示 |
+
+#### 统一内容与发送时机
+
+标题为 `应用 Scheme iOS · 平台 · 状态`。各平台均包含应用、Bundle ID、分发平台、状态、实际版本、Build、打包方式、构建配置、累计耗时和通知时间；时间包含构建机器的时区偏移。`changelog` 有值时追加更新说明，最多展示 1,000 个字符。缺失的可选字段与链接不展示。
+
+更新说明保留输入的逐行内容，LF / CRLF 换行会转换为 Markdown 强制换行，避免多条 Git 提交显示成一段；该格式转换仅用于钉钉展示，不修改上传平台收到的日志原文。
+
+二维码由构建机下载后，以 `data:image/...;base64,...` 内嵌到同一条 Markdown 通知，保留「打开二维码」链接。接受 PNG / JPEG / GIF，单图上限 8 KB，连接超时 5 秒、下载总超时 15 秒；下载失败、格式不符或超过上限时只展示链接，不中断打包。Base64 展示采用当前使用环境已验证的方式；[钉钉官方消息类型文档](https://open.dingtalk.com/document/orgapp/custom-bot-send-message-type)未明确承诺 Data URL 的跨客户端支持。
+
+- IPA 构建并复制完成后仅记录终端日志，不发送钉钉成功通知。
+- 蒲公英、fir、Zealot、TestFlight 和 App Store 在各自上传结束后发送一次平台结果；同时上传多个平台时，每个平台各一条。
+- 商店包缺少上传配置时发送「未上传」，说明 IPA 已生成；未配置测试分发平台且未执行检查时，构建成功不发送通知。
+- 构建、分发、符号上传或检查抛出异常时，发送当前平台和失败阶段，随后保留原有异常处理。原始异常详情仍在构建日志中。
+- Zealot 关闭 `fail_on_error` 后未返回发布结果时，发送「上传未完成」，按原配置继续流程。
+- 只有实际执行了代码检查，才发送检查项目清单；这表示检查执行完成，问题详情查看报告。App Store / TestFlight 跳过检查时不发送检查完成通知。
+- 钉钉发送超时、HTTP 失败或机器人拒绝消息时，只记录提示，不改变打包结果。不再发送「测试一下」。
+
+发送使用系统 `/usr/bin/curl`，保留 HTTPS 证书校验，连接超时 5 秒、整个请求超时 15 秒；Token 与正文通过标准输入传入，不出现在命令参数中。终端会记录发送开始及成功，失败时区分 curl 退出码、HTTP 状态码和钉钉 `errcode`，不打印凭据或原始响应。
+
+通知由 `package` 统一编排；直接调用 `upload_pgy`、`upload_fir`、`upload_zealot`、`upload_store` 或 `app_store_resources` 不额外发送这套通知。
+
+#### 各分发平台内容
+
+下面五份示例使用同一套公共字段；安装密码、链接、二维码只在配置或上传结果提供时出现。示例中的更新说明来自 `package(changelog: "修复问题，优化体验")`，不会自动读取 metadata 目录中的文案。
+
+**蒲公英**：安装页面、安装二维码、安装密码。地址使用上传接口返回的实际地址。
+
+```text
+📦 ExampleApp iOS · 蒲公英 · 上传完成
+应用：ExampleApp
+Bundle ID：com.example.app
+分发平台：蒲公英
+状态：上传完成
+版本：1.2.3
+Build：42
+打包方式：ad-hoc
+构建配置：Release
+安装密码：example-password
+累计耗时：180 秒
+通知时间：2026-11-03 12:00:00 +08:00
+[安装页面]
+[安装二维码]
+更新说明：修复问题，优化体验
+```
+
+**fir**：安装页面、安装密码。当前上传接口不提供二维码，因此不生成二维码链接。
+
+```text
+📦 ExampleApp iOS · fir · 上传完成
+应用：ExampleApp
+Bundle ID：com.example.app
+分发平台：fir
+状态：上传完成
+版本：1.2.3
+Build：42
+打包方式：ad-hoc
+构建配置：Release
+安装密码：example-password
+累计耗时：190 秒
+通知时间：2026-11-03 12:00:10 +08:00
+[安装页面]
+更新说明：修复问题，优化体验
+```
+
+**Zealot**：Release ID、版本详情、安装页面、安装二维码，以及 dSYM 是否上传。开启 dSYM 上传后，等待该步骤结束再发送此平台的结果。
+
+```text
+📦 ExampleApp iOS · Zealot · 上传完成
+应用：ExampleApp
+Bundle ID：com.example.app
+分发平台：Zealot
+状态：上传完成
+版本：1.2.3
+Build：42
+打包方式：ad-hoc
+构建配置：Release
+Release ID：42
+dSYM：已上传
+累计耗时：200 秒
+通知时间：2026-11-03 12:00:20 +08:00
+[版本详情] [安装页面]
+[安装二维码]
+更新说明：修复问题，优化体验
+```
+
+**TestFlight**：App Store Connect 入口、可选测试邀请；明确区分 IPA 上传和 Apple 后续处理。邀请链接不会因为本次上传而保证新构建已可测试。
+
+```text
+📦 ExampleApp iOS · TestFlight · 上传完成
+应用：ExampleApp
+Bundle ID：com.example.app
+分发平台：TestFlight
+状态：上传完成
+版本：1.2.3
+Build：42
+打包方式：testFlight
+构建配置：Release
+说明：IPA 已上传，尚未等待 Apple 处理完成；测试可用性请在 App Store Connect 确认。
+累计耗时：240 秒
+通知时间：2026-11-03 12:01:00 +08:00
+[App Store Connect] [TestFlight 测试邀请]
+更新说明：修复问题，优化体验
+```
+
+**App Store**：App Store Connect 入口、可选线上页面，以及本次元数据、截图、构建选择、提交审核的执行结果。资源总开关关闭时显示「商店资源：未开启，仅上传 IPA」；开启时如下例。
+
+```text
+📦 ExampleApp iOS · App Store · 上传完成
+应用：ExampleApp
+Bundle ID：com.example.app
+分发平台：App Store
+状态：上传完成
+版本：1.2.3
+Build：42
+打包方式：app-store
+构建配置：Release
+说明：上传完成不代表审核通过或已上线；线上页面可能仍为旧版本。
+元数据：已上传
+截图：未上传
+构建选择：已选择本次 Build
+提交审核：已提交
+累计耗时：360 秒
+通知时间：2026-11-03 12:03:00 +08:00
+[App Store Connect] [App Store 线上页面]
+更新说明：修复问题，优化体验
+```
+
+商店资源流程失败时不会发送上述成功消息，而是发送「执行失败」，注明失败阶段和 IPA 是否已经上传；通知本身不会开启商店资源功能。
+
+---
+
 ## 发布到 RubyGems
 
 工作流位于 [`.github/workflows/release.yml`](.github/workflows/release.yml)。使用 `1.0.0` 这样的纯版本标签，无需 `v` 前缀。推送数字开头的标签后，自动校验标签与 `lib/fastlane/plugin/fastci/version.rb` 中的 `VERSION` 完全一致，检查 Ruby 语法、构建 gem 并发布到 RubyGems。
@@ -418,12 +567,12 @@ sync_zealot_devices(api_key_path: "./app_store_connect_api_key.json")
 
 工作流使用官方 OIDC 短期凭据，不需要配置 `RUBYGEMS_API_KEY` 或创建 GitHub Environment。工作流文件在当前仓库内，Workflow Repository 两项留空。若以后设置 Environment，RubyGems 配置与工作流的 `environment` 必须保持一致。
 
-每次发布先修改 `VERSION`，执行 `bundle install` 同步 `Gemfile.lock`，并提交本次拟发布的代码和工作流。然后推送对应标签，例如版本更新为 `0.0.40` 后：
+每次发布先修改 `VERSION`，执行 `bundle install` 同步 `Gemfile.lock`，并提交本次拟发布的代码和工作流。然后推送对应标签，例如版本更新为 `0.0.41` 后：
 
 ```bash
 git push origin main
-git tag -a 0.0.40 -m "Release 0.0.40"
-git push origin 0.0.40
+git tag -a 0.0.41 -m "Release 0.0.41"
+git push origin 0.0.41
 ```
 
 到 GitHub **Actions → Release to RubyGems** 查看结果。已发布版本不能覆盖；失败重跑前先确认该版本是否已经发布。只有打入标签提交的文件会被发布，本地未提交改动不会包含在内。

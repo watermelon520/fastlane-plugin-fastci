@@ -5,15 +5,23 @@ include Fastlane::Helper
 
 module Fastlane
   module Actions
+    module SharedValues
+      FASTCI_STORE_UPLOAD_RESULT = :FASTCI_STORE_UPLOAD_RESULT
+    end
+
     # 上传 AppStore
     class UploadStoreAction < Action
       def self.run(params)
+        # 每次上传重新记录阶段；失败时 package 可区分 IPA 上传与后续资源发布。
+        result = { stage: '准备商店上传', ipa_uploaded: false, resources_enabled: false }
+        Actions.lane_context[SharedValues::FASTCI_STORE_UPLOAD_RESULT] = result
         resource_params, api_key_options = prepare_upload(params)
+        result[:resources_enabled] = !resource_params.nil?
 
         if params[:isTestFlight]
-          upload_testflight(api_key_options)
+          upload_testflight(api_key_options, result)
         else
-          upload_app_store(resource_params, api_key_options)
+          upload_app_store(resource_params, api_key_options, result)
         end
       end
 
@@ -51,21 +59,38 @@ module Fastlane
       end
 
       # TestFlight 沿用现有上传方式，不执行 App Store 资源流程。
-      def self.upload_testflight(api_key_options)
+      def self.upload_testflight(api_key_options, result)
         UI.message('*************| 开始上传 TestFlight |*************')
-        other_action.upload_to_testflight({ skip_waiting_for_build_processing: true }.merge(api_key_options))
+        result[:stage] = '上传 TestFlight IPA'
+        upload_result = other_action.upload_to_testflight({ skip_waiting_for_build_processing: true }.merge(api_key_options))
+        result[:ipa_uploaded] = true
+        upload_result
       end
 
       # 先上传 IPA，再处理已校验的资源；返回 IPA 上传结果以兼容已有 lane。
-      def self.upload_app_store(resource_params, api_key_options)
+      def self.upload_app_store(resource_params, api_key_options, result)
         UI.message('*************| 开始上传 AppStore |*************')
+        result[:stage] = '上传 App Store IPA'
         upload_options = app_store_upload_options(resource_params).merge(api_key_options)
         upload_result = other_action.upload_to_app_store(upload_options)
+        result[:ipa_uploaded] = true
         if resource_params
+          result[:stage] = '发布商店资源 / 选择构建 / 提交审核'
           # 新版本判断已在 IPA 上传前完成，之后直接使用确认过的资源上传开关。
           other_action.app_store_resources(resource_params.merge(upload_metadata_on_new_version: false))
+          record_resource_result(result, resource_params)
         end
         upload_result
+      end
+
+      # 仅在整个资源 Action 成功返回后记录完成项，保持原 Action 的返回值不变。
+      def self.record_resource_result(result, params)
+        result.merge!(
+          metadata_uploaded: params[:metadata_changed],
+          screenshots_uploaded: params[:screenshots_changed],
+          build_selected: params[:select_build] || params[:submit_for_review],
+          review_submitted: params[:submit_for_review]
+        )
       end
 
       # IPA 阶段始终关闭资源上传，避免默认目录或 Deliverfile 绕过资源总开关。
@@ -90,7 +115,7 @@ module Fastlane
       end
 
       private_class_method :prepare_upload, :load_store_resources, :parse_release_notes,
-                           :upload_testflight, :upload_app_store, :app_store_upload_options
+                           :upload_testflight, :upload_app_store, :app_store_upload_options, :record_resource_result
 
       def self.description
         "上传 AppStore"

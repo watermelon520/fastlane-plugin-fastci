@@ -17,7 +17,7 @@ platform :ios do
       is_upload_zealot_dsym: options[:is_upload_zealot_dsym],
       app_store_resources_enabled: options[:app_store_resources_enabled],
       app_store_resources_config_path: options[:app_store_resources_config_path],
-      changelog: options[:changelog], # fir 更新日志
+      changelog: options[:changelog], # fir / Zealot 更新日志，也是各平台钉钉通知的更新说明
       release_notes: options[:release_notes], # 配合 jenkins 传参上传 appstore 格式为 { \"zh-Hans\": \"修复问题\", \"en-US\": \"bugfix\"} JSON 字符串
       is_notice_dingding: options[:is_notice_dingding] # 控制钉钉发送通知的参数
     )

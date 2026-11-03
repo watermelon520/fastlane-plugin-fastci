@@ -9,6 +9,7 @@ describe Fastlane::Actions::UploadStoreAction do
   let(:api_key) { { key_id: 'test', key: 'test' } }
   let(:root) { Dir.mktmpdir('fastci-upload-spec') }
   let(:config_path) { File.join(root, 'resources.json') }
+  let(:upload_result_key) { Fastlane::Actions::SharedValues::FASTCI_STORE_UPLOAD_RESULT }
 
   before do
     allow(described_class).to receive(:other_action).and_return(other_actions)
@@ -32,6 +33,7 @@ describe Fastlane::Actions::UploadStoreAction do
     end
     expect(other_actions).not_to receive(:app_store_resources)
     expect(described_class.run(release_notes: '{"en-US":"Fixes"}', isTestFlight: false)).to eq(:uploaded)
+    expect(Fastlane::Actions.lane_context[upload_result_key]).to include(ipa_uploaded: true, resources_enabled: false)
   end
 
   it 'preserves TestFlight behavior and ignores a store resource config' do
@@ -112,6 +114,29 @@ describe Fastlane::Actions::UploadStoreAction do
       app_store_resources_config_path: config_path, app_identifier: 'com.example.current',
       app_version: '1.2.3', build_number: '42', release_notes: '{"en-US":"Fixes"}'
     )
+    expect(Fastlane::Actions.lane_context[upload_result_key]).to include(
+      ipa_uploaded: true, resources_enabled: true, metadata_uploaded: true,
+      screenshots_uploaded: false, build_selected: true, review_submitted: false
+    )
+  end
+
+  it 'keeps binary success separate from resource failure without retaining a previous result' do
+    Fastlane::Actions.lane_context[upload_result_key] = { review_submitted: true }
+    resource_params = { metadata_changed: true, screenshots_changed: false }
+    allow(described_class).to receive(:prepare_upload).and_return([resource_params, {}])
+    allow(other_actions).to receive(:upload_to_app_store).and_return(:uploaded)
+    allow(other_actions).to receive(:app_store_resources).and_raise('resource failure')
+    expect { described_class.run(app_store_resources_enabled: true) }.to raise_error('resource failure')
+    result = Fastlane::Actions.lane_context[upload_result_key]
+    expect(result).to include(ipa_uploaded: true, resources_enabled: true, stage: '发布商店资源 / 选择构建 / 提交审核')
+    expect(result).not_to have_key(:review_submitted)
+    expect(result).not_to have_key(:metadata_uploaded)
+  end
+
+  it 'does not claim IPA success when the binary upload fails' do
+    allow(other_actions).to receive(:upload_to_app_store).and_raise('binary failure')
+    expect { described_class.run(app_store_resources_enabled: false) }.to raise_error('binary failure')
+    expect(Fastlane::Actions.lane_context[upload_result_key]).to include(ipa_uploaded: false, stage: '上传 App Store IPA')
   end
 
   it 'stops before IPA upload when configured metadata is missing' do

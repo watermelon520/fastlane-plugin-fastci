@@ -120,6 +120,19 @@ module Fastlane
         ENV['DINGDING_TOKEN']
       end
 
+      # 商店安装入口由项目配置；上传接口本身不提供 TestFlight 邀请或线上商店地址。
+      def self.dingding_testflight_url
+        ENV['DINGDING_TESTFLIGHT_URL']
+      end
+      def self.dingding_app_store_url
+        ENV['DINGDING_APP_STORE_URL']
+      end
+
+      # 默认兼容原有密码展示，配置 false 后不在群通知中附带安装密码。
+      def self.dingding_include_install_password
+        ENV.fetch('DINGDING_INCLUDE_INSTALL_PASSWORD', 'true').casecmp('true').zero?
+      end
+
       # Sentry 配置
       def self.sentry_auth_token
         ENV['SENTRY_AUTH_TOKEN']
