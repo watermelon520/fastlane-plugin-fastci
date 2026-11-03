@@ -1,0 +1,22 @@
+{
+  "app_identifier": "com.example.app",
+  "app_version": "1.0.0",
+  "metadata_path": "fastlane/metadata",
+  "screenshots_path": "fastlane/screenshots",
+  "metadata_changed": true,
+  "screenshots_changed": false,
+  "upload_metadata_on_new_version": true,
+  "download_missing_metadata": false,
+  "download_missing_screenshots": false,
+  "use_live_version": false,
+  "sync_screenshots": false,
+  "overwrite_screenshots": false,
+  "select_build": false,
+  "wait_for_build_processing": true,
+  "build_processing_timeout": 3600,
+  "build_processing_poll_interval": 30,
+  "build_processing_retry_limit": 3,
+  "build_processing_retry_interval": 15,
+  "submit_for_review": false,
+  "automatic_release": false
+}

@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    fastlane-plugin-fastci (0.0.30)
+    fastlane-plugin-fastci (0.0.40)
       fastlane-plugin-fir_cli (~> 2.0.21)
       fastlane-plugin-pgyer (~> 0.3.2)
       fastlane-plugin-sentry (~> 2.5.1)
@@ -413,7 +413,7 @@ CHECKSUMS
   fastimage (2.4.1) sha256=c64bebd46b6fd8943ab70c1e6e85ff728f970f2e48f92ecd249b6bc3a540ad20
   fastlane (2.232.2) sha256=978689f60f0fc3d54699de86ef12be4eda9f5b52217c1798965257c390d2b112
   fastlane-plugin-debug_file (0.3.1) sha256=b710999fe0f7257d54094ad152efe48c7cfe540d9a38d26a84eec75187a3a541
-  fastlane-plugin-fastci (0.0.30)
+  fastlane-plugin-fastci (0.0.40)
   fastlane-plugin-fir_cli (2.0.21) sha256=ac62f0e80c2edbc78c3e9dfaddd1c335aafda55432cbb87dee7bb8b5668b4146
   fastlane-plugin-pgyer (0.3.3) sha256=10c4110db37c5195c5e9e1ce309186d64a7e85eb3849ab16629f0fcde4419472
   fastlane-plugin-sentry (2.5.1) sha256=403049d8e7f75fe262e47e2b644d8c774a3a5114ba08915acf5d89df30bbd983

@@ -1,5 +1,5 @@
 module Fastlane
   module Fastci
-    VERSION = "0.0.30"
+    VERSION = "0.0.40"
   end
 end

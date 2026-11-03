@@ -10,8 +10,30 @@
 /test/version_tmp/
 /tmp/
 
-# Used by dotenv library to load environment variables.
-# .env
+# 本机和 CI 的运行配置不入库，公开模板使用 .example 后缀。
+.env
+.env.*
+!.env*.example
+/fastlane/app_store_resources.json
+/fastlane/app_store_connect*.json
+/fastlane/api_key*.json
+
+# 签名材料和私钥仅保存在本机或 CI 密钥存储中。
+*.p8
+*.p12
+*.key
+*.pem
+*.mobileprovision
+*.provisionprofile
+*.keychain
+*.keychain-db
+
+# 运行报告、日志及业务资源可能包含项目名称、本机路径或审核信息。
+/fastlane/report.xml
+/fastlane/Preview.html
+/fastlane/metadata/
+/fastlane/screenshots/
+/fastlane_cache/
 
 # Ignore Byebug command history file.
 .byebug_history

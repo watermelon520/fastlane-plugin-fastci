@@ -1,6 +1,7 @@
 require 'gym'
 require 'fastlane_core'
 require 'fastlane/action'
+require 'fastlane/plugin/fastci/helper/app_store_resources_helper'
 include Fastlane::Helper
 
 module Fastlane
@@ -17,7 +18,7 @@ module Fastlane
         is_detect_duplicity_code = params[:is_detect_duplicity_code] || false
         is_detect_unused_code = params[:is_detect_unused_code] || false
         is_detect_unused_image = params[:is_detect_unused_image] || false
-        release_notes = params[:release_notes] || ''
+        store_options = store_upload_options(params, export_method)
         configuration = 'Release' if %w[app-store testFlight].include?(export_method)
         is_notice_dingding = params[:is_notice_dingding].nil? ? true : params[:is_notice_dingding]
         # 统一发送钉钉消息匿名函数
@@ -145,14 +146,7 @@ module Fastlane
           notiText = "🚀🚀🚀🚀🚀🚀\n\n#{scheme}-iOS-打包完成\n\n#{version}_#{build}_#{export_method}\n\n🚀🚀🚀🚀🚀🚀"
           send_dingding_notice.call(notiText)
 
-          if CommonHelper.is_validate_string(Environment.connect_key_id) && CommonHelper.is_validate_string(Environment.connect_issuer_id)
-            # 根据 export_method 决定是否为 TestFlight
-            is_test_flight = export_method == 'testFlight'
-
-            other_action.upload_store(
-              release_notes: release_notes,
-              isTestFlight: is_test_flight
-            )
+          if upload_store_if_configured(store_options, version: version, build: build)
             notiText = "🚀🚀🚀🚀🚀🚀\n\n#{scheme}-iOS-上传完成\n\n#{version}_#{build}_#{export_method}\n\n🚀🚀🚀🚀🚀🚀"
             send_dingding_notice.call(notiText)
           end
@@ -267,12 +261,67 @@ module Fastlane
         UI.message('*************| 脚本完成 |*************')
       end
 
+      # 构建前准备商店上传参数，开启资源功能却漏配路径时立即报错。
+      def self.store_upload_options(params, export_method)
+        config_path = AppStoreResourcesHelper.upload_config_path(params, app_store: export_method == 'app-store')
+        options = {
+          release_notes: params[:release_notes] || '',
+          isTestFlight: export_method == 'testFlight',
+          # 显式透传 false，避免下层 Action 从环境变量重新开启本次已关闭的功能。
+          app_store_resources_enabled: !config_path.nil?
+        }
+        options[:app_store_resources_config_path] = config_path if config_path
+        options
+      end
+
+      # 根据凭据或已开启的资源配置判断是否上传，单独存在资源路径不能触发上传。
+      def self.store_upload_configured?(options)
+        has_p8_key = CommonHelper.is_validate_string(Environment.connect_key_id) &&
+          CommonHelper.is_validate_string(Environment.connect_issuer_id)
+        has_api_key_json = CommonHelper.is_validate_string(Environment.app_store_connect_api_key_path)
+        has_p8_key || has_api_key_json || options[:app_store_resources_enabled]
+      end
+
+      # 上传本次产物，并返回是否执行了上传，供主流程决定是否发送完成通知。
+      def self.upload_store_if_configured(options, version:, build:)
+        return false unless store_upload_configured?(options)
+
+        upload_options = options.dup
+        if upload_options[:app_store_resources_enabled]
+          # 使用真实产物信息覆盖资源配置，避免选中 JSON 中残留的旧版本或 Build。
+          upload_options.merge!(
+            app_identifier: Environment.bundleID,
+            app_version: version.to_s,
+            build_number: build.to_s
+          )
+        end
+        other_action.upload_store(upload_options)
+        true
+      end
+
+      private_class_method :store_upload_options, :store_upload_configured?, :upload_store_if_configured
+
       def self.description
         '打包'
       end
 
       def self.available_options
         [
+          FastlaneCore::ConfigItem.new(
+            key: :app_store_resources_enabled,
+            env_name: 'APP_STORE_RESOURCES_ENABLED',
+            description: '商店资源总开关，默认关闭，仅 app-store 打包时生效',
+            optional: true,
+            default_value: false,
+            type: Boolean
+          ),
+          FastlaneCore::ConfigItem.new(
+            key: :app_store_resources_config_path,
+            env_name: 'APP_STORE_RESOURCES_CONFIG_PATH',
+            description: 'App Store 资源发布 JSON 路径，开启商店资源总开关后必填',
+            optional: true,
+            type: String
+          ),
           FastlaneCore::ConfigItem.new(
             key: :is_upload_zealot_dsym,
             env_name: 'ZEALOT_UPLOAD_DSYM',

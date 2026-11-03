@@ -9,6 +9,19 @@ module Fastlane
         ENV['CONNECT_ISSUER_ID']
       end
 
+      # 商店认证支持 CI 提供的 API Key JSON 密钥文件。
+      def self.app_store_connect_api_key_path
+        ENV['APP_STORE_CONNECT_API_KEY_PATH'].to_s.strip
+      end
+
+      # 未指定独立 P8 路径时，保留证书目录下 AuthKey_<KEY_ID>.p8 的原有约定。
+      def self.app_store_connect_p8_path
+        configured_path = ENV['APP_STORE_CONNECT_P8_PATH'].to_s.strip
+        return configured_path unless configured_path.empty?
+
+        File.join(package_file_folder_name.to_s, "AuthKey_#{connect_key_id}.p8")
+      end
+
       # 项目配置
       def self.scheme
         ENV['SCHEME_NAME']

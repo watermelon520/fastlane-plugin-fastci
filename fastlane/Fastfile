@@ -15,10 +15,17 @@ platform :ios do
       is_detect_unused_code: options[:is_detect_unused_code],
       is_detect_unused_image: options[:is_detect_unused_image],
       is_upload_zealot_dsym: options[:is_upload_zealot_dsym],
+      app_store_resources_enabled: options[:app_store_resources_enabled],
+      app_store_resources_config_path: options[:app_store_resources_config_path],
       changelog: options[:changelog], # fir 更新日志
       release_notes: options[:release_notes], # 配合 jenkins 传参上传 appstore 格式为 { \"zh-Hans\": \"修复问题\", \"en-US\": \"bugfix\"} JSON 字符串
       is_notice_dingding: options[:is_notice_dingding] # 控制钉钉发送通知的参数
     )
+  end
+
+  # 只更新商店资源，无需重新构建或上传 IPA。
+  lane :appStoreResources do |options|
+    app_store_resources(options)
   end
 
   # Zealot iOS 能力也可单独调用，配置读取 ZEALOT_* 环境变量。

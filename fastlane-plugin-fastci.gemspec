@@ -6,7 +6,6 @@ Gem::Specification.new do |spec|
   spec.name          = 'fastlane-plugin-fastci'
   spec.version       = Fastlane::Fastci::VERSION
   spec.author        = 'watermelon'
-  spec.email         = 'watermelon_lp@163.com'
 
   spec.summary       = 'supports multiple functions such as packaging, uploading, and code detection.'
   spec.homepage      = "https://github.com/watermelon520/fastlane-plugin-fastci"
@@ -15,6 +14,7 @@ Gem::Specification.new do |spec|
   spec.files         = Dir["lib/**/*"] + %w(README.md LICENSE)
   spec.require_paths = ['lib']
   spec.metadata['rubygems_mfa_required'] = 'true'
+  spec.metadata['bug_tracker_uri'] = "#{spec.homepage}/issues"
   spec.required_ruby_version = '>= 2.6'
 
   spec.add_dependency 'fastlane-plugin-pgyer', '~> 0.3.2'
