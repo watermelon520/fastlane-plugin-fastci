@@ -434,9 +434,16 @@ describe Fastlane::Helper::AppStoreResourcesHelper do
         build_processing_retry_interval: 0
       }
 
+      attempts = 0
       allow(FastlaneCore::BuildWatcher).to receive(:wait_for_build_processing_to_be_complete)
-        .and_raise(OpenSSL::SSL::SSLError, 'SSL_connect returned=1 unexpected eof while reading')
-        .then_return(build)
+        .and_wrap_original do |_original, *_args, **_kwargs|
+          attempts += 1
+          if attempts == 1
+            raise OpenSSL::SSL::SSLError, 'SSL_connect returned=1 unexpected eof while reading'
+          end
+
+          build
+        end
 
       expect(described_class.send(:find_build, params, app, :ios)).to eq(build)
       expect(FastlaneCore::BuildWatcher).to have_received(:wait_for_build_processing_to_be_complete).twice

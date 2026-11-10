@@ -225,6 +225,8 @@ module Fastlane
           return {
             release_notes: params[:release_notes] || '',
             isTestFlight: true,
+            # TestFlight 不进入商店资源流程，显式传递 nil 防止下层环境配置误开启资源发布。
+            app_store_resources_enabled: nil,
             app_identifier: Environment.bundleID,
             testflight_config_path: params[:testflight_config_path],
             api_key: testflight_params[:api_key],
