@@ -1,0 +1,61 @@
+name: Release to RubyGems
+
+on:
+  push:
+    tags:
+      - '[0-9]*'
+
+# 同一 tag 的发布串行执行，避免重跑时取消正在上传的任务。
+concurrency:
+  group: rubygems-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: github.event.deleted == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout tagged source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@7f797815d8adceb1c412e7abefdd1ab4abc47a5f # v1
+        with:
+          ruby-version: '3.3'
+          rubygems: latest
+          # 构建 gem 只需 gemspec 与版本文件，无需安装 Fastlane 的开发依赖。
+          bundler: none
+          bundler-cache: false
+
+      - name: Validate tag and Ruby source
+        run: |
+          ruby <<'RUBY'
+          require_relative 'lib/fastlane/plugin/fastci/version'
+
+          expected_tag = Fastlane::Fastci::VERSION
+          actual_tag = ENV.fetch('GITHUB_REF_NAME')
+          abort "Tag #{actual_tag} does not match #{expected_tag}" unless actual_tag == expected_tag
+
+          Dir['lib/**/*.rb'].each do |path|
+            abort "Invalid Ruby syntax: #{path}" unless system(RbConfig.ruby, '-c', path)
+          end
+          RUBY
+
+      - name: Build gem
+        run: |
+          mkdir -p pkg
+          gem build fastlane-plugin-fastci.gemspec --output pkg/fastlane-plugin-fastci.gem
+
+      # 先在 RubyGems 为本仓库的 release.yml 绑定 Trusted Publisher，Environment 留空。
+      - name: Configure RubyGems credentials
+        uses: rubygems/configure-rubygems-credentials@f5a32efa94076b80b28556b2d3b04cb3707b6df1 # main
+
+      - name: Publish gem
+        run: gem push pkg/fastlane-plugin-fastci.gem --host https://rubygems.org

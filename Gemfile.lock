@@ -1,11 +1,12 @@
 PATH
   remote: .
   specs:
-    fastlane-plugin-fastci (0.0.24)
+    fastlane-plugin-fastci (0.0.41)
       fastlane-plugin-fir_cli (~> 2.0.21)
       fastlane-plugin-pgyer (~> 0.3.2)
       fastlane-plugin-sentry (~> 2.5.1)
       fastlane-plugin-versioning (~> 0.7.1)
+      fastlane-plugin-zealot (~> 1.0.1)
 
 GEM
   remote: https://rubygems.org/
@@ -142,12 +143,20 @@ GEM
       xcodeproj (>= 1.13.0, < 2.0.0)
       xcpretty (~> 0.4.1)
       xcpretty-travis-formatter (>= 0.0.3, < 2.0.0)
+    fastlane-plugin-debug_file (0.3.1)
+      ruby-macho (>= 1.4, < 3.0)
     fastlane-plugin-fir_cli (2.0.21)
       fir-cli (~> 2.0.21)
     fastlane-plugin-pgyer (0.3.3)
     fastlane-plugin-sentry (2.5.1)
       os (~> 1.1, >= 1.1.4)
     fastlane-plugin-versioning (0.7.1)
+    fastlane-plugin-zealot (1.0.1)
+      faraday (>= 1.0.1)
+      faraday-multipart (>= 1.0.0)
+      faraday-net_http (>= 1.0.0)
+      faraday-retry (>= 1.0.0)
+      fastlane-plugin-debug_file (>= 0.3.0)
     fastlane-sirp (1.0.0)
       sysrandom (~> 1.0)
     fir-cli (2.0.24)
@@ -291,6 +300,7 @@ GEM
       rubocop-ast (>= 1.31.1, < 2.0)
     rubocop-require_tools (0.1.2)
       rubocop (>= 0.49.1)
+    ruby-macho (2.5.1)
     ruby-progressbar (1.13.0)
     ruby2_keywords (0.0.5)
     ruby_android_apk (0.7.7.1)
@@ -402,11 +412,13 @@ CHECKSUMS
   faraday_middleware (1.2.1) sha256=d45b78c8ee864c4783fbc276f845243d4a7918a67301c052647bacabec0529e9
   fastimage (2.4.1) sha256=c64bebd46b6fd8943ab70c1e6e85ff728f970f2e48f92ecd249b6bc3a540ad20
   fastlane (2.232.2) sha256=978689f60f0fc3d54699de86ef12be4eda9f5b52217c1798965257c390d2b112
-  fastlane-plugin-fastci (0.0.24)
+  fastlane-plugin-debug_file (0.3.1) sha256=b710999fe0f7257d54094ad152efe48c7cfe540d9a38d26a84eec75187a3a541
+  fastlane-plugin-fastci (0.0.41)
   fastlane-plugin-fir_cli (2.0.21) sha256=ac62f0e80c2edbc78c3e9dfaddd1c335aafda55432cbb87dee7bb8b5668b4146
   fastlane-plugin-pgyer (0.3.3) sha256=10c4110db37c5195c5e9e1ce309186d64a7e85eb3849ab16629f0fcde4419472
   fastlane-plugin-sentry (2.5.1) sha256=403049d8e7f75fe262e47e2b644d8c774a3a5114ba08915acf5d89df30bbd983
   fastlane-plugin-versioning (0.7.1) sha256=7279958eb66f0cbb4a7884d69c8318e3347a414a821569f7b6ff3156e0b1d9db
+  fastlane-plugin-zealot (1.0.1) sha256=e8ac360e464768f5a0e7bf8e9715f880202fde867de41cf3b7b2fc04497e28fa
   fastlane-sirp (1.0.0) sha256=66478f25bcd039ec02ccf65625373fca29646fa73d655eb533c915f106c5e641
   fir-cli (2.0.24) sha256=3e5783ad74301419067a6ec2fa8ca248a3ca1ed5c2f14f41fa710dd52e61ffb9
   gh_inspector (1.1.3) sha256=04cca7171b87164e053aa43147971d3b7f500fcb58177698886b48a9fc4a1939
@@ -471,6 +483,7 @@ CHECKSUMS
   rubocop-ast (1.49.1) sha256=4412f3ee70f6fe4546cc489548e0f6fcf76cafcfa80fa03af67098ffed755035
   rubocop-performance (1.23.1) sha256=f22f86a795f5e6a6180aac2c6fc172534b173a068d6ed3396d6460523e051b82
   rubocop-require_tools (0.1.2) sha256=fab4e1a92c51d062f689b1dfcd6e3859a42479dbcde77a6bc75d8bcc45ced0f9
+  ruby-macho (2.5.1) sha256=9075e52e0f9270b552a90b24fcc6219ad149b0d15eae1bc364ecd0ac8984f5c9
   ruby-progressbar (1.13.0) sha256=80fc9c47a9b640d6834e0dc7b3c94c9df37f08cb072b7761e4a71e22cff29b33
   ruby2_keywords (0.0.5) sha256=ffd13740c573b7301cf7a2e61fc857b2a8e3d3aff32545d6f8300d8bae10e3ef
   ruby_android_apk (0.7.7.1) sha256=263c73507c8ec27733a471379f0c8a6f5cf5d0409c64e1d5e750a0f4bcdaf408

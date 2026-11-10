@@ -1,6 +1,8 @@
 require 'gym'
 require 'fastlane_core'
 require 'fastlane/action'
+require 'fastlane/plugin/fastci/helper/app_store_resources_helper'
+require 'fastlane/plugin/fastci/helper/package_notification_helper'
 include Fastlane::Helper
 
 module Fastlane
@@ -8,35 +10,16 @@ module Fastlane
     # 打包
     class PackageAction < Action
       def self.run(params)
+        notice = PackageNotificationHelper.new(params)
         # 入参配置
         configuration = params[:configuration] || 'Debug'
         export_method = params[:export_method] || 'development'
         build = params[:build] || nil
         version = params[:version] || nil
-        is_analyze_swiftlint = params[:is_analyze_swiftlint] || false
-        is_detect_duplicity_code = params[:is_detect_duplicity_code] || false
-        is_detect_unused_code = params[:is_detect_unused_code] || false
-        is_detect_unused_image = params[:is_detect_unused_image] || false
-        release_notes = params[:release_notes] || ''
-        app_store_resources_config_path = params[:app_store_resources_config_path]
-        testflight_config_path = params[:testflight_config_path]
-        testflight_params = {}
-        if export_method == 'testFlight'
-          testflight_params = AppStoreResourcesHelper.load_testflight_params(params)
-          build = testflight_params[:testflight_build_number] if testflight_params[:testflight_build_number]
-          release_notes = testflight_params[:changelog] if release_notes.to_s.empty? && testflight_params[:changelog]
-        end
+        testflight_params = export_method == 'testFlight' ? AppStoreResourcesHelper.load_testflight_params(params) : {}
+        build = testflight_params[:testflight_build_number] if export_method == 'testFlight' && testflight_params[:testflight_build_number]
+        store_options = store_upload_options(params, export_method, testflight_params)
         configuration = 'Release' if %w[app-store testFlight].include?(export_method)
-        is_notice_dingding = params[:is_notice_dingding].nil? ? true : params[:is_notice_dingding]
-        # 统一发送钉钉消息匿名函数
-        send_dingding_notice = lambda do |text|
-          if is_notice_dingding
-            DingdingHelper.sendMarkdown(text)
-          else
-            UI.message('*************| 跳过钉钉消息通知（is_notice_dingding=false）|*************')
-          end
-        end
-        send_dingding_notice.call('测试一下')
         # 清理上一次的打包缓存
         FileUtils.rm_rf(Dir.glob("#{Constants.BUILD_LOG_DIR}/*"))
         FileUtils.rm_rf(Dir.glob("#{Constants.IPA_OUTPUT_DIR}/*"))
@@ -60,7 +43,6 @@ module Fastlane
         other_action.update_build_number(
           build: build
         )
-        time = Time.new.strftime('%Y%m%d%H%M')
 
         # 获取版本号
         version_options = { target: scheme }
@@ -73,6 +55,7 @@ module Fastlane
         build = other_action.get_build_number(build_options)
         # 生成ipa包的名字格式
         ipaName = "#{scheme}_#{export_method}_#{version}_#{build}.ipa"
+        notice.build_info(version: version, build: build)
 
         # 获取 Extension 的 Bundle ID（可能有多个，用逗号分隔）
         extension_bundle_ids = Environment.extension_bundle_ids
@@ -127,11 +110,13 @@ module Fastlane
           gym_options[:export_options][:provisioningProfiles] = provisioningProfiles_map
         end
 
+        notice.stage(:local, '构建 IPA')
         other_action.gym(gym_options)
 
         UI.message('*************| 打包完成 |*************')
 
         UI.message('*************| 复制打包产物 |*************')
+        notice.stage(:local, '复制构建产物')
         # 定义桌面路径
         desktop_path = File.expand_path('~/Desktop')
         output_path = File.join(desktop_path, "BuildOutput_#{scheme}")
@@ -148,166 +133,156 @@ module Fastlane
         # system("git reset --hard")
 
         ipa_path = "#{Constants.IPA_OUTPUT_DIR}/#{ipaName}"
-
-        if gym_method == 'app-store'
-          notiText = "🚀🚀🚀🚀🚀🚀\n\n#{scheme}-iOS-打包完成\n\n#{version}_#{build}_#{export_method}\n\n🚀🚀🚀🚀🚀🚀"
-          send_dingding_notice.call(notiText)
-
-          has_p8_api_key = CommonHelper.is_validate_string(Environment.connect_key_id) &&
-            CommonHelper.is_validate_string(Environment.connect_issuer_id)
-          has_api_key_json = CommonHelper.is_validate_string(Environment.app_store_connect_api_key_path)
-          if has_p8_api_key || has_api_key_json
-            # 根据 export_method 决定是否为 TestFlight
-            is_test_flight = export_method == 'testFlight'
-
-            metadata_required_for_new_version = false
-            unless is_test_flight || app_store_resources_config_path.to_s.empty?
-              resource_params = AppStoreResourcesHelper.load_params(
-                config_path: app_store_resources_config_path,
-                app_identifier: Environment.bundleID,
-                app_version: version.to_s,
-                build_number: build.to_s
-              )
-              metadata_required_for_new_version =
-                AppStoreResourcesHelper.metadata_required_for_new_version?(resource_params)
-              UI.message(
-                "目标 App Store 版本 #{version} #{metadata_required_for_new_version ? '不存在，将强制上传 metadata' : '已存在，按资源变更配置处理'}"
-              )
-            end
-
-            other_action.upload_store(
-              release_notes: release_notes,
-              isTestFlight: is_test_flight,
-              skip_metadata: !app_store_resources_config_path.to_s.empty?,
-              testflight_changelog: testflight_params[:changelog],
-              testflight_distribute_external: testflight_params[:distribute_external],
-              testflight_notify_external_testers: testflight_params[:notify_external_testers],
-              testflight_submit_beta_review: testflight_params[:submit_beta_review],
-              testflight_groups: testflight_params[:groups]
-            )
-
-            if is_test_flight && testflight_params[:testflight_build_number]
-              AppStoreResourcesHelper.verify_testflight_build(
-                testflight_params.merge(
-                  app_identifier: Environment.bundleID,
-                  app_version: version.to_s,
-                  testflight_build_number: build.to_s
-                )
-              )
-            elsif !is_test_flight && !app_store_resources_config_path.to_s.empty?
-              resource_options = {
-                config_path: app_store_resources_config_path,
-                app_identifier: Environment.bundleID,
-                app_version: version.to_s,
-                build_number: build.to_s,
-                select_build: params[:select_build_after_upload]
-              }
-              resource_options[:metadata_changed] = true if metadata_required_for_new_version
-              other_action.app_store_resources(
-                resource_options
-              )
-            end
-            notiText = "🚀🚀🚀🚀🚀🚀\n\n#{scheme}-iOS-上传完成\n\n#{version}_#{build}_#{export_method}\n\n🚀🚀🚀🚀🚀🚀"
-            send_dingding_notice.call(notiText)
-          end
-        else
-          # 钉钉通知
-          notiText = "🚀🚀🚀🚀🚀🚀\n\n#{scheme}-iOS-打包完成\n\n#{version}_#{build}_#{export_method}\n\n🚀🚀🚀🚀🚀🚀"
-
-          # 上传蒲公英
-          if CommonHelper.is_validate_string(Environment.pgy_api_key)
-            pgy_upload_info = other_action.upload_pgy
-            qrCode = pgy_upload_info['buildQRCodeURL']
-
-            if CommonHelper.is_validate_string(qrCode)
-              notiText << "\n\n⬇️⬇️⬇️ 扫码安装 ⬇️⬇️⬇️\n\n\n密码: #{Environment.pgy_password}\n![screenshot](#{qrCode})"
-            end
-          end
-
-          # 上传 fir
-          if CommonHelper.is_validate_string(Environment.fir_api_token)
-            fir_upload_info = other_action.upload_fir(
-              changelog: params[:changelog]
-            )
-            download_url = fir_upload_info[:download_url]
-
-            if CommonHelper.is_validate_string(download_url)
-              notiText << "\n\n⬇️⬇️⬇️ 点击链接安装 ⬇️⬇️⬇️\n\n\n密码: #{Environment.fir_password}\n[_点击下载_](#{download_url})"
-            end
-          end
-
-          send_dingding_notice.call(notiText)
-        end
+        # 构建完成仅记录终端日志，钉钉成功通知由各分发平台上传结果触发。
+        distribute_package(params, notice, store_options, ipa_path: ipa_path, version: version, build: build)
 
         # Sentry 上传 dSYM
         if CommonHelper.is_validate_string(Environment.sentry_auth_token)
+          notice.stage(:sentry, '上传 dSYM')
           other_action.sentry_upload_dsym
         else
           UI.message('*************| 未配置 Sentry 跳过 dSYM 上传 |*************')
         end
 
-        # 代码分析
-        if is_analyze_swiftlint && gym_method != 'app-store'
-          other_action.analyze_swiftlint(
-            is_from_package: true,
-            configuration: configuration
-          )
-          # 结果复制到桌面
-          FileUtils.cp(SWIFTLINT_ANALYZE_HTML_FILE, target_path)
-          UI.message('*************| 代码分析完成 |*************')
-        else
-          UI.message('*************| 跳过代码分析 |*************')
-        end
-
-        # 重复代码检查
-        if is_detect_duplicity_code && gym_method != 'app-store'
-          other_action.detect_duplicity_code(
-            is_all: true
-          )
-          # 结果复制到桌面
-          FileUtils.cp(DUPLICITY_CODE_HTML_FILE, target_path)
-          UI.message('*************| 重复代码检查完成 |*************')
-        else
-          UI.message('*************| 跳过重复代码检查 |*************')
-        end
-
-        # 无用代码检查
-        if is_detect_unused_code && gym_method != 'app-store'
-          other_action.detect_unused_code(
-            scheme: scheme,
-            is_from_package: true,
-            configuration: configuration
-          )
-          # 结果复制到桌面
-          FileUtils.cp(Constants.UNUSED_CODE_HTML_FILE, target_path)
-          UI.message('*************| 无用代码检查完成 |*************')
-        else
-          UI.message('*************| 跳过无用代码检查 |*************')
-        end
-
-        # 无用图片检查
-        if is_detect_unused_image && gym_method != 'app-store'
-          other_action.detect_unused_image
-          # 结果复制到桌面
-          FileUtils.cp(Constants.UNUSED_IMAGE_HTML_FILE, target_path)
-          UI.message('*************| 无用图片检查完成 |*************')
-        else
-          UI.message('*************| 跳过未使用图片检查 |*************')
-        end
-
-        if is_analyze_swiftlint ||
-           is_detect_duplicity_code ||
-           is_detect_unused_code ||
-           is_detect_unused_image
-          # 钉钉通知
-          notiText = "🚀🚀🚀🚀🚀🚀\n\n#{scheme}-iOS-代码检查完成\n\n#{version}_#{build}_#{export_method}\n\n🚀🚀🚀🚀🚀🚀"
-          send_dingding_notice.call(notiText)
-        else
-          UI.message('*************| 跳过代码检查 |*************')
-        end
+        run_package_checks(params, notice, gym_method: gym_method, scheme: scheme,
+                           configuration: configuration, target_path: target_path)
 
         UI.message('*************| 脚本完成 |*************')
+      rescue StandardError
+        notice&.failure(store_result: Actions.lane_context[SharedValues::FASTCI_STORE_UPLOAD_RESULT] || {})
+        raise
       end
+
+      # 各平台分别发送结果；后一个平台失败时，已经成功的平台仍有明确通知。
+      def self.distribute_package(params, notice, store_options, ipa_path:, version:, build:)
+        if %w[app-store testFlight].include?(params[:export_method])
+          platform = params[:export_method] == 'testFlight' ? :testflight : :app_store
+          notice.stage(platform, '准备商店上传')
+          Actions.lane_context.delete(SharedValues::FASTCI_STORE_UPLOAD_RESULT)
+          if upload_store_if_configured(store_options, version: version, build: build)
+            result = Actions.lane_context[SharedValues::FASTCI_STORE_UPLOAD_RESULT] || {}
+            notice.distribution_completed(platform, { uploaded: true }, store_result: result)
+          else
+            notice.store_skipped(platform)
+          end
+        else
+          distribute_test_package(params, notice, ipa_path)
+        end
+      end
+
+      # 保持原有上传顺序与开关；安装链接的整理交给通知 Helper。
+      def self.distribute_test_package(params, notice, ipa_path)
+        if CommonHelper.is_validate_string(Environment.pgy_api_key)
+          notice.stage(:pgy, '上传 IPA')
+          notice.distribution_completed(:pgy, other_action.upload_pgy)
+        end
+        if CommonHelper.is_validate_string(Environment.fir_api_token)
+          notice.stage(:fir, '上传 IPA')
+          notice.distribution_completed(:fir, other_action.upload_fir(changelog: params[:changelog]))
+        end
+        return unless CommonHelper.is_validate_string(Environment.zealot_token)
+
+        notice.stage(:zealot, '上传 IPA')
+        result = other_action.upload_zealot(file: ipa_path, changelog: params[:changelog])
+        if result && params[:is_upload_zealot_dsym]
+          notice.stage(:zealot, '上传 dSYM（IPA 已上传）')
+          other_action.upload_zealot_dsym
+          result = result.merge(dsym_status: Actions.lane_context[SharedValues::ZEAALOT_ERROR_MESSAGE] ? '上传未完成' : '已上传')
+        end
+        notice.distribution_completed(:zealot, result)
+      end
+
+      # 仅统计实际调用的检查，商店包跳过检查时不发送“检查完成”。
+      def self.run_package_checks(params, notice, gym_method:, scheme:, configuration:, target_path:)
+        return if gym_method == 'app-store'
+
+        checks = [
+          [:is_analyze_swiftlint, 'SwiftLint', :analyze_swiftlint,
+           { is_from_package: true, configuration: configuration }, Constants.SWIFTLINT_ANALYZE_HTML_FILE],
+          [:is_detect_duplicity_code, '重复代码', :detect_duplicity_code,
+           { is_all: true }, Constants.DUPLICITY_CODE_HTML_FILE],
+          [:is_detect_unused_code, '无用代码', :detect_unused_code,
+           { scheme: scheme, is_from_package: true, configuration: configuration }, Constants.UNUSED_CODE_HTML_FILE],
+          [:is_detect_unused_image, '无用图片', :detect_unused_image, {}, Constants.UNUSED_IMAGE_HTML_FILE]
+        ]
+        completed = []
+        checks.each do |key, name, action, options, report|
+          next unless params[key]
+
+          notice.stage(:checks, name)
+          options.empty? ? other_action.public_send(action) : other_action.public_send(action, **options)
+          FileUtils.cp(report, target_path)
+          completed << name
+        end
+        notice.checks_completed(completed)
+      end
+
+      private_class_method :distribute_package, :distribute_test_package, :run_package_checks
+
+      # 构建前准备商店上传参数，开启资源功能却漏配路径时立即报错。
+      def self.store_upload_options(params, export_method, testflight_params = {})
+        if export_method == 'testFlight'
+          return {
+            release_notes: params[:release_notes] || '',
+            isTestFlight: true,
+            app_identifier: Environment.bundleID,
+            testflight_config_path: params[:testflight_config_path],
+            api_key: testflight_params[:api_key],
+            api_key_path: testflight_params[:api_key_path],
+            username: testflight_params[:username],
+            testflight_build_number: testflight_params[:testflight_build_number],
+            testflight_changelog: testflight_params[:changelog],
+            testflight_distribute_external: testflight_params[:distribute_external],
+            testflight_notify_external_testers: testflight_params[:notify_external_testers],
+            testflight_submit_beta_review: testflight_params[:submit_beta_review],
+            testflight_groups: testflight_params[:groups]
+          }
+        end
+
+        config_path = AppStoreResourcesHelper.upload_config_path(params, app_store: true)
+        options = {
+          release_notes: params[:release_notes] || '',
+          isTestFlight: false,
+          # 显式透传 false，避免下层 Action 从环境变量重新开启本次已关闭的功能。
+          app_store_resources_enabled: !config_path.nil?
+        }
+        options[:app_store_resources_config_path] = config_path if config_path
+        options
+      end
+
+      # 根据凭据或已开启的资源配置判断是否上传，单独存在资源路径不能触发上传。
+      def self.store_upload_configured?(options)
+        has_p8_key = CommonHelper.is_validate_string(Environment.connect_key_id) &&
+          CommonHelper.is_validate_string(Environment.connect_issuer_id)
+        has_api_key_json = CommonHelper.is_validate_string(Environment.app_store_connect_api_key_path)
+        options[:isTestFlight] || has_p8_key || has_api_key_json || options[:app_store_resources_enabled]
+      end
+
+      # 上传本次产物，并返回是否执行了上传，供主流程决定是否发送完成通知。
+      def self.upload_store_if_configured(options, version:, build:)
+        return false unless store_upload_configured?(options)
+
+        upload_options = options.dup
+        if upload_options[:app_store_resources_enabled]
+          # 使用真实产物信息覆盖资源配置，避免选中 JSON 中残留的旧版本或 Build。
+          upload_options.merge!(
+            app_identifier: Environment.bundleID,
+            app_version: version.to_s,
+            build_number: build.to_s
+          )
+        elsif upload_options[:isTestFlight]
+          # TestFlight 只使用独立配置和本次产物的精确版本/Build，不读取商店资源 JSON。
+          upload_options.merge!(
+            app_identifier: Environment.bundleID,
+            app_version: version.to_s,
+            testflight_build_number: build.to_s
+          )
+        end
+        other_action.upload_store(upload_options)
+        true
+      end
+
+      private_class_method :store_upload_options, :store_upload_configured?, :upload_store_if_configured
 
       def self.description
         '打包'
@@ -315,6 +290,29 @@ module Fastlane
 
       def self.available_options
         [
+          FastlaneCore::ConfigItem.new(
+            key: :app_store_resources_enabled,
+            env_name: 'APP_STORE_RESOURCES_ENABLED',
+            description: '商店资源总开关，默认关闭，仅 app-store 打包时生效',
+            optional: true,
+            default_value: false,
+            type: Boolean
+          ),
+          FastlaneCore::ConfigItem.new(
+            key: :app_store_resources_config_path,
+            env_name: 'APP_STORE_RESOURCES_CONFIG_PATH',
+            description: 'App Store 资源发布 JSON 路径，开启商店资源总开关后必填',
+            optional: true,
+            type: String
+          ),
+          FastlaneCore::ConfigItem.new(
+            key: :is_upload_zealot_dsym,
+            env_name: 'ZEALOT_UPLOAD_DSYM',
+            description: 'IPA 上传 Zealot 成功后继续上传 iOS dSYM',
+            optional: true,
+            default_value: false,
+            type: Boolean
+          ),
           FastlaneCore::ConfigItem.new(
             key: :scheme,
             description: '不采取默认配置，自定义 `scheme` 名称',
@@ -399,35 +397,15 @@ module Fastlane
             type: String
           ),
           FastlaneCore::ConfigItem.new(
-            key: :app_store_resources_config_path,
-            description: 'App Store 资源、构建选择和审核提交 JSON 配置文件路径；仅用于 app-store',
-            optional: true,
-            default_value: nil,
-            type: String,
-            verify_block: proc do |value|
-              UI.user_error!("App Store 资源配置文件不存在: #{value}") unless File.file?(File.expand_path(value))
-            end
-          ),
-          FastlaneCore::ConfigItem.new(
-            key: :select_build_after_upload,
-            description: 'IPA 上传后是否自动选择本次构建；未配置时由资源 JSON 的 select_build 控制',
-            optional: true,
-            default_value: nil,
-            type: Boolean
-          ),
-          FastlaneCore::ConfigItem.new(
             key: :testflight_config_path,
             description: 'TestFlight 测试内容、Build 校验和分发配置文件路径；仅用于 testFlight',
             optional: true,
             default_value: nil,
-            type: String,
-            verify_block: proc do |value|
-              UI.user_error!("TestFlight 配置文件不存在: #{value}") unless File.file?(File.expand_path(value))
-            end
+            type: String
           ),
           FastlaneCore::ConfigItem.new(
             key: :testflight_build_number,
-            description: 'TestFlight 专用 Build Number；优先使用 testflight_config_path 中的配置',
+            description: 'TestFlight 专用 Build Number；优先使用配置文件',
             optional: true,
             default_value: nil,
             type: String
@@ -441,21 +419,21 @@ module Fastlane
           ),
           FastlaneCore::ConfigItem.new(
             key: :testflight_distribute_external,
-            description: '是否自动分发 TestFlight 构建到外部测试组，默认关闭',
+            description: '是否将 TestFlight 构建分发给外部测试组',
             optional: true,
             default_value: false,
             type: Boolean
           ),
           FastlaneCore::ConfigItem.new(
             key: :testflight_notify_external_testers,
-            description: '分发 TestFlight 构建时是否通知外部测试人员，默认关闭',
+            description: '分发到外部测试组时是否通知测试人员',
             optional: true,
             default_value: false,
             type: Boolean
           ),
           FastlaneCore::ConfigItem.new(
             key: :testflight_submit_beta_review,
-            description: '是否自动提交 TestFlight Beta 审核；关闭后需在 App Store Connect 手动提交，默认开启',
+            description: '是否自动提交 TestFlight Beta 审核',
             optional: true,
             default_value: true,
             type: Boolean

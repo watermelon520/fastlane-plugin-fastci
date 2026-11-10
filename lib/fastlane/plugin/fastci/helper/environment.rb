@@ -9,17 +9,17 @@ module Fastlane
         ENV['CONNECT_ISSUER_ID']
       end
 
-      # App Store Connect API Key 的 P8 文件路径；未设置时沿用证书目录默认路径。
+      # 商店认证支持 CI 提供的 API Key JSON 密钥文件。
+      def self.app_store_connect_api_key_path
+        ENV['APP_STORE_CONNECT_API_KEY_PATH'].to_s.strip
+      end
+
+      # 未指定独立 P8 路径时，保留证书目录下 AuthKey_<KEY_ID>.p8 的原有约定。
       def self.app_store_connect_p8_path
-        configured_path = ENV['DINO_APP_STORE_CONNECT_P8_PATH'].to_s.strip
+        configured_path = ENV['APP_STORE_CONNECT_P8_PATH'].to_s.strip
         return configured_path unless configured_path.empty?
 
         File.join(package_file_folder_name.to_s, "AuthKey_#{connect_key_id}.p8")
-      end
-
-      # 标准 App Store Connect API Key JSON 路径，适用于 Jenkins Secret file。
-      def self.app_store_connect_api_key_path
-        ENV['APP_STORE_CONNECT_API_KEY_PATH'].to_s.strip
       end
 
       # 项目配置
@@ -104,9 +104,33 @@ module Fastlane
         ENV['FIR_SWITCH_QINIU'] == "true"
       end
 
+      # Zealot 配置；可选上传渠道，未配置时不影响现有打包流程。
+      def self.zealot_endpoint
+        ENV['ZEALOT_ENDPOINT']
+      end
+      def self.zealot_token
+        ENV['ZEALOT_TOKEN']
+      end
+      def self.zealot_channel_key
+        ENV['ZEALOT_CHANNEL_KEY']
+      end
+
       # 钉钉配置
       def self.dingdingToken
         ENV['DINGDING_TOKEN']
+      end
+
+      # 商店安装入口由项目配置；上传接口本身不提供 TestFlight 邀请或线上商店地址。
+      def self.dingding_testflight_url
+        ENV['DINGDING_TESTFLIGHT_URL']
+      end
+      def self.dingding_app_store_url
+        ENV['DINGDING_APP_STORE_URL']
+      end
+
+      # 默认兼容原有密码展示，配置 false 后不在群通知中附带安装密码。
+      def self.dingding_include_install_password
+        ENV.fetch('DINGDING_INCLUDE_INSTALL_PASSWORD', 'true').casecmp('true').zero?
       end
 
       # Sentry 配置
