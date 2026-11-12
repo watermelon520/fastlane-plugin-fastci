@@ -7,3 +7,10 @@ describe Fastlane::Fastci do
     expect(Fastlane::Actions::UploadZealotAction.is_supported?(:ios)).to be(true)
   end
 end
+
+describe Fastlane::Actions::AppStoreResourcesAction do
+  it 'describes App Store Connect resource publishing' do
+    expect(described_class.description).to include('metadata')
+    expect(described_class.description).to include('截图')
+  end
+end

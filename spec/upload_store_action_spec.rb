@@ -36,12 +36,29 @@ describe Fastlane::Actions::UploadStoreAction do
     expect(Fastlane::Actions.lane_context[upload_result_key]).to include(ipa_uploaded: true, resources_enabled: false)
   end
 
-  it 'preserves TestFlight behavior and ignores a store resource config' do
-    expect(other_actions).to receive(:upload_to_testflight).with(
-      { skip_waiting_for_build_processing: true, api_key: api_key }
-    )
+  it 'forwards TestFlight controls and verifies the exact processed build without resources' do
+    allow(helper).to receive(:verify_testflight_build)
+    expect(other_actions).to receive(:upload_to_testflight).with(hash_including(
+      skip_waiting_for_build_processing: false,
+      distribute_external: true,
+      notify_external_testers: true,
+      submit_beta_review: false,
+      changelog: 'Please test login',
+      groups: ['External'],
+      api_key: api_key
+    ))
     expect(other_actions).not_to receive(:app_store_resources)
-    described_class.run(isTestFlight: true, app_store_resources_enabled: true, app_store_resources_config_path: '/missing/resources.json')
+    described_class.run(
+      isTestFlight: true, app_store_resources_enabled: true,
+      app_store_resources_config_path: '/missing/resources.json',
+      app_identifier: 'com.example.app', app_version: '1.2.3', testflight_build_number: '42',
+      testflight_changelog: 'Please test login', testflight_distribute_external: true,
+      testflight_notify_external_testers: true, testflight_submit_beta_review: false,
+      testflight_groups: ['External']
+    )
+    expect(helper).to have_received(:verify_testflight_build).with(hash_including(
+      app_identifier: 'com.example.app', app_version: '1.2.3', testflight_build_number: '42'
+    ))
   end
 
   it 'keeps metadata and screenshot synchronization disabled even when Deliverfile enables them' do

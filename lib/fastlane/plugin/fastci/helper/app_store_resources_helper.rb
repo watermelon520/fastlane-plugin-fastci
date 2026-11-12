@@ -67,6 +67,26 @@ module Fastlane
         force: true
       }.freeze
 
+      # TestFlight 配置与商店资源配置严格分开，避免测试参数隐式开启资源发布。
+      TESTFLIGHT_CONFIG_KEYS = %i[
+        app_identifier app_version testflight_build_number changelog api_key api_key_path username platform
+        wait_for_build_processing build_processing_timeout build_processing_poll_interval
+        build_processing_retry_limit build_processing_retry_interval distribute_external
+        notify_external_testers submit_beta_review groups
+      ].freeze
+
+      TESTFLIGHT_DEFAULT_PARAMS = {
+        platform: 'ios',
+        wait_for_build_processing: true,
+        build_processing_timeout: 3600,
+        build_processing_poll_interval: 30,
+        build_processing_retry_limit: 3,
+        build_processing_retry_interval: 15,
+        distribute_external: false,
+        notify_external_testers: false,
+        submit_beta_review: true
+      }.freeze
+
       # 打包和 IPA 上传共用的资源入口校验；关闭总开关或非 App Store 时不读取路径。
       def self.upload_config_path(params, app_store:)
         return nil unless app_store && params[:app_store_resources_enabled] == true
@@ -112,6 +132,44 @@ module Fastlane
       rescue JSON::ParserError
         # 解析器的错误详情可能带出原始 JSON，其中可能包含认证信息。
         UI.user_error!("资源配置文件不是有效 JSON: #{config_path}")
+      end
+
+      # 独立读取 TestFlight 配置；只接受 TestFlight 字段，不触碰 App Store 资源开关。
+      def self.load_testflight_params(params)
+        config_path = params[:testflight_config_path]
+        config = {}
+        unless config_path.to_s.strip.empty?
+          config_path = File.expand_path(config_path)
+          UI.user_error!("TestFlight 配置文件不存在: #{config_path}") unless File.file?(config_path)
+          config = JSON.parse(File.read(config_path))
+          UI.user_error!("TestFlight 配置文件必须是 JSON 对象: #{config_path}") unless config.is_a?(Hash)
+          config = config.each_with_object({}) do |(key, value), values|
+            symbol_key = key.to_sym
+            UI.user_error!("TestFlight 配置包含不支持的字段: #{key}") unless TESTFLIGHT_CONFIG_KEYS.include?(symbol_key)
+            values[symbol_key] = value
+          end
+        end
+
+        explicit_values = if params.respond_to?(:_values)
+                            params._values
+                          else
+                            params
+                          end
+        explicit_values = explicit_values.each_with_object({}) do |(key, value), values|
+          values[key] = value if TESTFLIGHT_CONFIG_KEYS.include?(key) && !value.nil?
+        end
+        explicit_values[:testflight_build_number] = params[:testflight_build_number] if params[:testflight_build_number]
+        explicit_values[:changelog] = params[:testflight_changelog] if params[:testflight_changelog]
+        explicit_values[:distribute_external] = params[:testflight_distribute_external] unless params[:testflight_distribute_external].nil?
+        explicit_values[:notify_external_testers] = params[:testflight_notify_external_testers] unless params[:testflight_notify_external_testers].nil?
+        explicit_values[:submit_beta_review] = params[:testflight_submit_beta_review] unless params[:testflight_submit_beta_review].nil?
+        explicit_values[:groups] = params[:testflight_groups] if params[:testflight_groups]
+
+        TESTFLIGHT_DEFAULT_PARAMS.merge(config).merge(explicit_values).tap do |values|
+          values[:testflight_config_path] = config_path unless config_path.to_s.strip.empty?
+        end
+      rescue JSON::ParserError
+        UI.user_error!("TestFlight 配置文件不是有效 JSON: #{config_path}")
       end
 
       # 复用项目的认证配置；JSON 或显式参数优先于环境变量和已有 lane 凭据。
@@ -316,6 +374,23 @@ module Fastlane
         build
       end
 
+      # TestFlight 不绑定 App Store 可编辑版本，只确认指定版本和 Build 已处理完成。
+      def self.verify_testflight_build(params)
+        validate_testflight_build_params(params)
+        authenticate(params)
+
+        app = Spaceship::ConnectAPI::App.find(params[:app_identifier])
+        UI.user_error!("找不到 App Store Connect 应用: #{params[:app_identifier]}") unless app
+        platform = Spaceship::ConnectAPI::Platform.map(params[:platform])
+        build = find_testflight_build(params, app, platform)
+        valid_state = Spaceship::ConnectAPI::Build::ProcessingState::VALID
+        unless build.processing_state == valid_state
+          UI.user_error!("TestFlight Build #{params[:app_version]} (#{params[:testflight_build_number]}) 处理失败，状态: #{build.processing_state}")
+        end
+        UI.success("已确认 TestFlight 构建: #{params[:app_version]} (#{params[:testflight_build_number]})")
+        build
+      end
+
       # 资源上传、构建选择成功后才使用此配置提交审核，不重复上传任何资源。
       def self.review_options(params)
         {
@@ -347,6 +422,12 @@ module Fastlane
         UI.user_error!('自动选择构建或提交审核时必须配置 build_number') if params[:build_number].to_s.empty?
       end
 
+      # TestFlight 精确 Build 校验必须同时提供版本和 Build 号。
+      def self.validate_testflight_build_params(params)
+        UI.user_error!('TestFlight 构建校验需要配置 app_version') if params[:app_version].to_s.empty?
+        UI.user_error!('TestFlight 构建校验需要配置 testflight_build_number') if params[:testflight_build_number].to_s.empty?
+      end
+
       # 为直接调用 Spaceship 的版本查询和构建选择建立会话；优先使用 API Token。
       def self.authenticate(params)
         require 'spaceship/connect_api'
@@ -365,6 +446,22 @@ module Fastlane
       end
 
       # 根据配置等待处理完成或只查询一次，两条路径都同时限定版本号与 Build 号。
+      def self.find_testflight_build(params, app, platform)
+        build_number = params[:testflight_build_number].to_s
+        if params[:wait_for_build_processing]
+          return wait_for_build_processing(params, app, platform, build_number)
+        end
+
+        build = Spaceship::ConnectAPI::Build.all(
+          app_id: app.id,
+          version: params[:app_version].to_s,
+          build_number: build_number,
+          platform: platform
+        ).first
+        UI.user_error!("找不到 TestFlight Build: #{params[:app_version]} (#{build_number})") unless build
+        build
+      end
+
       def self.find_build(params, app, platform)
         if params[:wait_for_build_processing]
           return wait_for_build_processing(params, app, platform, params[:build_number])
@@ -429,7 +526,7 @@ module Fastlane
         )
       end
 
-      private_class_method :download_metadata, :download_screenshots, :authenticate, :find_build,
+      private_class_method :download_metadata, :download_screenshots, :authenticate, :find_build, :find_testflight_build,
                            :wait_for_build_processing, :retryable_build_processing_error?
     end
   end

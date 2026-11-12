@@ -4,7 +4,10 @@ module Fastlane
   module Fastci
     # Return all .rb files inside the "actions" and "helper" directory
     def self.all_classes
-      Dir[File.expand_path('**/{actions,helper}/*.rb', File.dirname(__FILE__))]
+      root_path = File.dirname(__FILE__)
+      helper_files = Dir[File.join(root_path, '**', 'helper', '*.rb')].sort
+      action_files = Dir[File.join(root_path, '**', 'actions', '*.rb')].sort
+      helper_files + action_files
     end
   end
 end

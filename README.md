@@ -79,7 +79,40 @@ package(
 )
 ```
 
-### 2. SwiftLint 静态代码分析
+### 2. TestFlight 发布与精确 Build 校验
+
+`export_method: "testFlight"` 使用独立的 TestFlight 配置，不会读取或开启 App Store 资源配置。IPA 上传完成后，插件按 `app_version + testflight_build_number` 查询并校验已处理成功的 Build；找不到 Build、处理失败或超时都会让 lane 失败，不会报告分发或 Beta 审核已完成。
+
+```ruby
+package(
+  export_method: "testFlight",
+  testflight_config_path: "fastlane/testflight_release.json"
+)
+```
+
+`fastlane/testflight_release.json` 示例：
+
+```json
+{
+  "app_identifier": "com.example.app",
+  "app_version": "1.2.3",
+  "testflight_build_number": "2026081302",
+  "changelog": "请重点测试登录、消息和支付流程。",
+  "wait_for_build_processing": true,
+  "build_processing_timeout": 3600,
+  "build_processing_poll_interval": 30,
+  "build_processing_retry_limit": 3,
+  "build_processing_retry_interval": 15,
+  "distribute_external": false,
+  "notify_external_testers": false,
+  "submit_beta_review": true,
+  "groups": ["External Testers"]
+}
+```
+
+也可以直接传入 `testflight_build_number`、`testflight_changelog`、`testflight_distribute_external`、`testflight_notify_external_testers`、`testflight_submit_beta_review` 和 `testflight_groups`。TestFlight 认证支持配置文件中的 `api_key`/`api_key_path`/`username`，或复用环境中的 App Store Connect 凭据；资源总开关、metadata 和截图参数不会影响 TestFlight。
+
+### 3. SwiftLint 静态代码分析
 功能：依赖 ` SwiftLint ` 对项目代码进行静态分析，生成分析报告。
 使用前需要参考自定义 [` .swiftlint.yml `](/.swiftlint.yml) 文件，并将该文件放到项目根目录。
 
@@ -93,7 +126,7 @@ analyze_swiftlint(
 )
 ```
 
-### 3. 检测重复代码
+### 4. 检测重复代码
 功能：检测项目中的重复代码，生成分析报告。
 使用前需要参考自定义 [` .periphery.yml `](/.periphery.yml) 文件，并将该文件放到项目根目录。
 
@@ -106,7 +139,7 @@ detect_duplicity_code(
 )
 ```
 
-### 4. 检测未使用代码
+### 5. 检测未使用代码
 功能：检测项目中未被使用的代码，生成分析报告。
 默认只支持 ` Debug `，需要支持 ` Release ` 请在 ` Build settings ` 中将 ` Enable Index-While-Building Functionality ` 设置为 ` Yes `。
 
@@ -116,7 +149,7 @@ detect_unused_code(
 )
 ```
 
-### 5. 检测未使用图片资源
+### 6. 检测未使用图片资源
 功能：检测项目中未被使用的图片资源，生成分析报告。
 
 ```ruby
@@ -129,7 +162,7 @@ detect_unused_image(
 
 <a id="app-store-resources"></a>
 
-### 6. App Store 元数据与截图（配置驱动，仅 iOS）
+### 7. App Store 元数据与截图（配置驱动，仅 iOS）
 
 通过独立 `app_store_resources` Action 管理商店名称、副标题、描述、关键词、更新说明、宣传文本、支持/隐私链接、分类、审核信息及截图，沿用 Fastlane 的 metadata 目录格式。也可以接入现有 `package` / `upload_store` 流程：先上传 IPA，再上传配置指定的资源，最后按需选择 Build、提交审核。
 
@@ -345,7 +378,7 @@ bundle exec fastlane action app_store_resources
 
 目录格式和字段遵循 [Fastlane deliver 文档](https://docs.fastlane.tools/actions/deliver/)。
 
-### 7. Zealot（仅 iOS）
+### 8. Zealot（仅 iOS）
 
 通过官方 [fastlane-plugin-zealot](https://github.com/tryzealot/fastlane-plugin-zealot) 封装以下独立 Action：
 
@@ -401,7 +434,7 @@ sync_zealot_devices(api_key_path: "./app_store_connect_api_key.json")
 
 依赖兼容：Zealot 的 `debug_file` 依赖 `ruby-macho < 3`，不能与 CocoaPods 1.17（依赖 4.x）放在同一 bundle。此类工程应将 CocoaPods 放入独立 Gemfile；使用 Faraday 1 的 Fastlane 工程还应将 `faraday-net_http` 限制为 `~> 1.0`。
 
-### 8. 钉钉通知
+### 9. 钉钉通知
 
 `package` 使用统一的 Markdown 模板发送分发结果、失败及检查结果。配置 `DINGDING_TOKEN` 后默认开启，传入 `is_notice_dingding: false` 可关闭本次流程的全部通知。机器人配置参考[钉钉自定义机器人文档](https://open.dingtalk.com/document/robots/custom-robot-access)，关键词可设为 `iOS`。
 

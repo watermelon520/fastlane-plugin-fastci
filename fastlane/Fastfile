@@ -17,6 +17,13 @@ platform :ios do
       is_upload_zealot_dsym: options[:is_upload_zealot_dsym],
       app_store_resources_enabled: options[:app_store_resources_enabled],
       app_store_resources_config_path: options[:app_store_resources_config_path],
+      testflight_config_path: options[:testflight_config_path],
+      testflight_build_number: options[:testflight_build_number],
+      testflight_changelog: options[:testflight_changelog],
+      testflight_distribute_external: options[:testflight_distribute_external],
+      testflight_notify_external_testers: options[:testflight_notify_external_testers],
+      testflight_submit_beta_review: options[:testflight_submit_beta_review],
+      testflight_groups: options[:testflight_groups],
       changelog: options[:changelog], # fir / Zealot 更新日志，也是各平台钉钉通知的更新说明
       release_notes: options[:release_notes], # 配合 jenkins 传参上传 appstore 格式为 { \"zh-Hans\": \"修复问题\", \"en-US\": \"bugfix\"} JSON 字符串
       is_notice_dingding: options[:is_notice_dingding] # 控制钉钉发送通知的参数

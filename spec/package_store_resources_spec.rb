@@ -68,9 +68,12 @@ describe Fastlane::Actions::PackageAction do
 
   it 'does not forward App Store resource configuration to TestFlight' do
     allow(environment).to receive(:app_store_connect_api_key_path).and_return('/secure/key.json')
-    expect(other_actions).to receive(:upload_store).with({
-      release_notes: '', isTestFlight: true, app_store_resources_enabled: false
-    })
+    expect(other_actions).to receive(:upload_store).with(hash_including(
+      release_notes: '', isTestFlight: true,
+      app_store_resources_enabled: nil,
+      app_identifier: 'com.example.app',
+      testflight_submit_beta_review: true
+    ))
     described_class.run(options.merge(export_method: 'testFlight'))
   end
 

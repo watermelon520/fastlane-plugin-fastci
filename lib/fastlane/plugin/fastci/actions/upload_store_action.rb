@@ -19,7 +19,7 @@ module Fastlane
         result[:resources_enabled] = !resource_params.nil?
 
         if params[:isTestFlight]
-          upload_testflight(api_key_options, result)
+          upload_testflight(params, api_key_options, result)
         else
           upload_app_store(resource_params, api_key_options, result)
         end
@@ -28,7 +28,11 @@ module Fastlane
       # 上传前统一准备认证和资源，确保配置错误或资源缺失在 IPA 上传前被发现。
       def self.prepare_upload(params)
         resource_params = load_store_resources(params)
-        api_key_options = AppStoreResourcesHelper.authentication_options(resource_params || {}, other_action)
+        authentication_params = resource_params || {}
+        if params[:isTestFlight]
+          authentication_params = AppStoreResourcesHelper.load_testflight_params(params)
+        end
+        api_key_options = AppStoreResourcesHelper.authentication_options(authentication_params, other_action)
         if resource_params
           resource_params.merge!(api_key_options)
           resource_params = AppStoreResourcesHelper.prepare(resource_params)
@@ -58,12 +62,30 @@ module Fastlane
         nil
       end
 
-      # TestFlight 沿用现有上传方式，不执行 App Store 资源流程。
-      def self.upload_testflight(api_key_options, result)
+      # TestFlight 保留测试内容、外部测试组、通知和 Beta 审核参数，不执行商店资源流程。
+      def self.upload_testflight(params, api_key_options, result)
         UI.message('*************| 开始上传 TestFlight |*************')
         result[:stage] = '上传 TestFlight IPA'
-        upload_result = other_action.upload_to_testflight({ skip_waiting_for_build_processing: true }.merge(api_key_options))
+        testflight = AppStoreResourcesHelper.load_testflight_params(params)
+        upload_options = {
+          skip_waiting_for_build_processing: false,
+          distribute_external: testflight[:distribute_external],
+          notify_external_testers: testflight[:notify_external_testers],
+          submit_beta_review: testflight[:submit_beta_review]
+        }
+        upload_options[:changelog] = testflight[:changelog] if testflight[:changelog].to_s.length.positive?
+        upload_options[:groups] = testflight[:groups] if testflight[:groups]
+        upload_result = other_action.upload_to_testflight(upload_options.merge(api_key_options))
         result[:ipa_uploaded] = true
+
+        if params[:testflight_build_number] || testflight[:testflight_build_number]
+          verify_params = testflight.merge(
+            app_identifier: params[:app_identifier] || testflight[:app_identifier],
+            app_version: params[:app_version] || testflight[:app_version]
+          ).merge(api_key_options)
+          AppStoreResourcesHelper.verify_testflight_build(verify_params)
+          result[:testflight_build_verified] = true
+        end
         upload_result
       end
 
@@ -132,24 +154,25 @@ module Fastlane
             type: Boolean
           ),
           FastlaneCore::ConfigItem.new(
+            key: :app_store_resources_config_path,
+            env_name: 'APP_STORE_RESOURCES_CONFIG_PATH',
+            description: 'App Store 资源发布 JSON 路径，开启商店资源总开关后必填',
+            optional: true,
+            default_value: nil,
+            type: String
+          ),
+          FastlaneCore::ConfigItem.new(
             key: :release_notes,
-            description: "更新文案, 格式为 { \"zh-Hans\": \"修复问题\", \"en-US\": \"bugfix\"} JSON 字符串",
+            description: '更新文案，格式为按语言配置的 JSON 字符串',
             optional: true,
             type: String
           ),
           FastlaneCore::ConfigItem.new(
             key: :isTestFlight,
-            description: "是否为 TestFlight 打包",
+            description: '是否为 TestFlight 打包',
             optional: true,
             default_value: false,
             type: Boolean
-          ),
-          FastlaneCore::ConfigItem.new(
-            key: :app_store_resources_config_path,
-            env_name: 'APP_STORE_RESOURCES_CONFIG_PATH',
-            description: 'App Store 资源发布 JSON 路径，开启商店资源总开关后必填',
-            optional: true,
-            type: String
           ),
           FastlaneCore::ConfigItem.new(
             key: :app_identifier,
@@ -168,6 +191,76 @@ module Fastlane
             description: '本次构建的 Build 号，覆盖资源配置',
             optional: true,
             type: String
+          ),
+          FastlaneCore::ConfigItem.new(
+            key: :api_key,
+            description: 'App Store Connect API Key Hash',
+            optional: true,
+            sensitive: true,
+            type: Hash,
+            conflicting_options: [:api_key_path]
+          ),
+          FastlaneCore::ConfigItem.new(
+            key: :api_key_path,
+            description: 'App Store Connect API Key JSON 文件路径',
+            optional: true,
+            type: String,
+            conflicting_options: [:api_key]
+          ),
+          FastlaneCore::ConfigItem.new(
+            key: :username,
+            description: 'Apple ID 用户名',
+            optional: true,
+            type: String
+          ),
+          FastlaneCore::ConfigItem.new(
+            key: :testflight_config_path,
+            description: 'TestFlight 测试内容、Build 校验和分发配置文件路径',
+            optional: true,
+            default_value: nil,
+            type: String
+          ),
+          FastlaneCore::ConfigItem.new(
+            key: :testflight_build_number,
+            description: 'TestFlight 专用 Build Number',
+            optional: true,
+            default_value: nil,
+            type: String
+          ),
+          FastlaneCore::ConfigItem.new(
+            key: :testflight_changelog,
+            description: 'TestFlight 测试内容（What to Test）',
+            optional: true,
+            default_value: nil,
+            type: String
+          ),
+          FastlaneCore::ConfigItem.new(
+            key: :testflight_distribute_external,
+            description: '是否将 TestFlight 构建分发给外部测试组',
+            optional: true,
+            default_value: false,
+            type: Boolean
+          ),
+          FastlaneCore::ConfigItem.new(
+            key: :testflight_notify_external_testers,
+            description: '分发到外部测试组时是否通知测试人员',
+            optional: true,
+            default_value: false,
+            type: Boolean
+          ),
+          FastlaneCore::ConfigItem.new(
+            key: :testflight_submit_beta_review,
+            description: '是否自动提交 TestFlight Beta 审核',
+            optional: true,
+            default_value: true,
+            type: Boolean
+          ),
+          FastlaneCore::ConfigItem.new(
+            key: :testflight_groups,
+            description: 'TestFlight 外部测试组名称或 ID 列表',
+            optional: true,
+            default_value: nil,
+            type: Array
           )
         ]
       end
