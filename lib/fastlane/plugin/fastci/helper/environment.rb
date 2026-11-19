@@ -71,6 +71,54 @@ module Fastlane
         ENV['EXTENSION_PROFILES_APPSTORE']&.split(",") || []
       end
 
+      # 灵动岛通常是一个独立的 Live Activity Extension target。支持单个
+      # Bundle ID，也支持逗号分隔的复数配置，方便同一工程包含多个相关 target。
+      def self.dynamic_island_bundle_ids
+        split_environment_values('DYNAMIC_ISLAND_BUNDLE_IDS', 'DYNAMIC_ISLAND_BUNDLE_ID')
+      end
+
+      def self.dynamic_island_profiles_development
+        split_environment_values('DYNAMIC_ISLAND_PROFILES_DEVELOPMENT', 'DYNAMIC_ISLAND_PROFILE_DEVELOPMENT')
+      end
+
+      def self.dynamic_island_profiles_adhoc
+        split_environment_values('DYNAMIC_ISLAND_PROFILES_ADHOC', 'DYNAMIC_ISLAND_PROFILE_ADHOC')
+      end
+
+      def self.dynamic_island_profiles_appstore
+        split_environment_values('DYNAMIC_ISLAND_PROFILES_APPSTORE', 'DYNAMIC_ISLAND_PROFILE_APPSTORE')
+      end
+
+      # 单个灵动岛 target 的便捷读取方法，与现有单数 profile 配置命名保持一致。
+      def self.dynamic_island_profile_development
+        dynamic_island_profiles_development.first
+      end
+
+      def self.dynamic_island_profile_adhoc
+        dynamic_island_profiles_adhoc.first
+      end
+
+      def self.dynamic_island_profile_appstore
+        dynamic_island_profiles_appstore.first
+      end
+
+      # Live Activity 的兼容命名；部分业务项目使用 activity_* 读取方式。
+      def self.activity_bundle_id
+        dynamic_island_bundle_ids.first
+      end
+
+      def self.activity_profile_development
+        dynamic_island_profile_development
+      end
+
+      def self.activity_profile_adhoc
+        dynamic_island_profile_adhoc
+      end
+
+      def self.activity_profile_appstore
+        dynamic_island_profile_appstore
+      end
+
       # p12 证书配置
       def self.certificate_development
         ENV['CERTIFICATE_DEVELOPMENT']
@@ -146,6 +194,12 @@ module Fastlane
       def self.sentry_url
         ENV['SENTRY_URL']
       end
+
+      def self.split_environment_values(*keys)
+        value = keys.map { |key| ENV[key].to_s.strip }.find { |candidate| !candidate.empty? }
+        value ? value.split(',').map(&:strip).reject(&:empty?) : []
+      end
+      private_class_method :split_environment_values
 
     end
   end
