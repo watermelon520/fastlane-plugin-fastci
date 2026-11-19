@@ -82,6 +82,28 @@ describe Fastlane::Actions::PackageAction do
     described_class.run(options.merge(export_method: 'development'))
   end
 
+  it 'passes the Dynamic Island profile to gym export options' do
+    allow(environment).to receive_messages(
+      is_auto_update_provisioning: false,
+      extension_bundle_ids: ['com.example.app.LiveActivity'],
+      extension_profiles_development: [],
+      dynamic_island_bundle_ids: [],
+      dynamic_island_profiles_development: ['ExampleApp LiveActivity Development'],
+      provisioningProfiles_development: 'ExampleApp Development'
+    )
+    allow(other_actions).to receive(:install_certificate)
+    allow(other_actions).to receive(:install_profile)
+    gym_options = nil
+    allow(other_actions).to receive(:gym) { |received_options| gym_options = received_options }
+
+    described_class.run(options.merge(export_method: 'development'))
+
+    expect(gym_options.dig(:export_options, :provisioningProfiles)).to eq(
+      'com.example.app' => 'ExampleApp Development',
+      'com.example.app.LiveActivity' => 'ExampleApp LiveActivity Development'
+    )
+  end
+
   it 'reads the same environment configuration in all three entry points' do
     previous = ENV['APP_STORE_RESOURCES_CONFIG_PATH']
     ENV['APP_STORE_RESOURCES_CONFIG_PATH'] = '/example/resources.json'

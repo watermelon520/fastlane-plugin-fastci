@@ -57,35 +57,9 @@ module Fastlane
         ipaName = "#{scheme}_#{export_method}_#{version}_#{build}.ipa"
         notice.build_info(version: version, build: build)
 
-        # 获取 Extension 的 Bundle ID（可能有多个，用逗号分隔）
-        extension_bundle_ids = Environment.extension_bundle_ids
-        extension_profile_names = []
-        # profile 名字
-        profile_name = ''
-
-        case export_method
-        when 'development'
-          profile_name = Environment.provisioningProfiles_development
-          extension_profile_names = Environment.extension_profiles_development
-        when 'ad-hoc'
-          profile_name = Environment.provisioningProfiles_adhoc
-          extension_profile_names = Environment.extension_profiles_adhoc
-        when 'app-store', 'testFlight'
-          profile_name = Environment.provisioningProfiles_appstore
-          extension_profile_names = Environment.extension_profiles_appstore
-        else
-          raise "Unsupported export method: #{export_method}"
-        end
-
         UI.message('*************| 开始打包 |*************')
 
-        # 组装 provisioningProfiles
-        provisioningProfiles_map = {
-          "#{Environment.bundleID}" => "#{profile_name}"
-        }
-        extension_bundle_ids.each_with_index do |ext_bundle_id, idx|
-          provisioningProfiles_map[ext_bundle_id.strip] = extension_profile_names[idx]&.strip
-        end
+        provisioningProfiles_map = provisioning_profiles_map(export_method)
 
         # 对于 testFlight，使用 app-store 方法
         gym_method = export_method == 'testFlight' ? 'app-store' : export_method
@@ -151,6 +125,53 @@ module Fastlane
       rescue StandardError
         notice&.failure(store_result: Actions.lane_context[SharedValues::FASTCI_STORE_UPLOAD_RESULT] || {})
         raise
+      end
+
+      # 组装主 App、普通 Extension 和 Live Activity 的 provisioningProfiles。
+      # 独立成方法后，导出配置可以在打包前被可靠地验证。
+      def self.provisioning_profiles_map(export_method)
+        extension_bundle_ids = Environment.extension_bundle_ids
+        extension_profile_names = []
+        dynamic_island_bundle_ids = Environment.dynamic_island_bundle_ids
+        dynamic_island_profile_names = []
+
+        case export_method
+        when 'development'
+          profile_name = Environment.provisioningProfiles_development
+          extension_profile_names = Environment.extension_profiles_development
+          dynamic_island_profile_names = Environment.dynamic_island_profiles_development
+          activity_profile = Environment.activity_profile_development
+        when 'ad-hoc'
+          profile_name = Environment.provisioningProfiles_adhoc
+          extension_profile_names = Environment.extension_profiles_adhoc
+          dynamic_island_profile_names = Environment.dynamic_island_profiles_adhoc
+          activity_profile = Environment.activity_profile_adhoc
+        when 'app-store', 'testFlight'
+          profile_name = Environment.provisioningProfiles_appstore
+          extension_profile_names = Environment.extension_profiles_appstore
+          dynamic_island_profile_names = Environment.dynamic_island_profiles_appstore
+          activity_profile = Environment.activity_profile_appstore
+        else
+          raise "Unsupported export method: #{export_method}"
+        end
+
+        activity_bundle_id = Environment.activity_bundle_id.to_s.strip
+        if !activity_bundle_id.empty? && !dynamic_island_bundle_ids.include?(activity_bundle_id)
+          dynamic_island_bundle_ids += [activity_bundle_id]
+          dynamic_island_profile_names += [activity_profile]
+        end
+
+        provisioning_profiles = { "#{Environment.bundleID}" => "#{profile_name}" }
+        # 未单独配置灵动岛 Bundle ID 时，将其 profile 追加到 Extension 列表，
+        # 这样已有的 EXTENSION_BUNDLE_IDS 配置也能直接绑定 Live Activity profile。
+        extension_profile_names += dynamic_island_profile_names if dynamic_island_bundle_ids.empty?
+        extension_bundle_ids.each_with_index do |ext_bundle_id, idx|
+          provisioning_profiles[ext_bundle_id.strip] = extension_profile_names[idx]&.strip
+        end
+        dynamic_island_bundle_ids.each_with_index do |bundle_id, idx|
+          provisioning_profiles[bundle_id.strip] = dynamic_island_profile_names[idx]&.strip
+        end
+        provisioning_profiles
       end
 
       # 各平台分别发送结果；后一个平台失败时，已经成功的平台仍有明确通知。
